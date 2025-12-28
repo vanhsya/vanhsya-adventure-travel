@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vanhsya - Transform Your Global Journey With AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/js-base64@3.7.2/base64.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <style>
+      :root {
+        --bg-primary: #0A0A10;
+        --bg-secondary: #111118;
+        --text-primary: #E0E0E0;
+        --text-secondary: #a0a0a0;
+        --accent-primary: #00F2FE; /* Cosmic Teal */
+        --accent-secondary: #8A2BE2; /* BlueViolet for a richer purple */
+        --accent-secondary-rgb: 138, 43, 226;
+        --border-color: #27272a; /* Zinc 800 */
+        --shadow-color-primary: rgba(0, 242, 254, 0.2);
+        --shadow-color-secondary: rgba(138, 43, 226, 0.25);
+      }
+
+      html[data-theme='light'] {
+        --bg-primary: #F8FAFC; /* Slate 50 */
+        --bg-secondary: #FFFFFF;
+        --text-primary: #1E293B; /* Slate 800 */
+        --text-secondary: #475569; /* Slate 600 */
+        --accent-primary: #3B82F6; /* Blue 500 */
+        --accent-secondary: #6366F1; /* Indigo 500 */
+        --accent-secondary-rgb: 99, 102, 241;
+        --border-color: #E2E8F0; /* Slate 200 */
+        --shadow-color-primary: rgba(59, 130, 246, 0.2);
+        --shadow-color-secondary: rgba(99, 102, 241, 0.2);
+      }
+
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        overflow-x: hidden;
+      }
+      .font-cinzel {
+        font-family: 'Cinzel', serif;
+      }
+      
+      h1, h2, h3, h4, h5, h6 {
+        text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+      }
+      html[data-theme='light'] h1, 
+      html[data-theme='light'] h2, 
+      html[data-theme='light'] h3, 
+      html[data-theme='light'] h4, 
+      html[data-theme='light'] h5, 
+      html[data-theme='light'] h6 {
+        text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      }
+      
+      .header-blur {
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+      }
+      
+      @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+      }
+      @keyframes fadeOut {
+          from { opacity: 1; }
+          to { opacity: 0; }
+      }
+      @keyframes kenburns {
+        0% { transform: scale(1); }
+        100% { transform: scale(1.1); }
+      }
+
+      .hero-bg-image-instance {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        background-size: cover;
+        background-position: center;
+        transition: opacity 1.5s ease-in-out;
+        opacity: 0;
+      }
+      .hero-bg-image-instance.active {
+        opacity: 1;
+        animation: kenburns 20s ease-out infinite alternate;
+      }
+
+      @keyframes pulse {
+          0%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px var(--shadow-color-secondary)); }
+          50% { transform: scale(1.05); filter: drop-shadow(0 0 20px var(--shadow-color-secondary)); }
+      }
+
+      .scroll-anim {
+        opacity: 0;
+        transform: translateY(2rem);
+        transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+      }
+      .scroll-anim.is-visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* Hero Text Animation */
+      @keyframes slide-up-fade-in {
+        0% {
+          opacity: 0;
+          transform: translateY(1em);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      
+      .animate-hero-text > span {
+        display: inline-block; /* Required for transform */
+        opacity: 0;
+        animation: slide-up-fade-in 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+      }
+      
+      /* Hero Button Animation */
+      @keyframes button-glow {
+        0%, 100% {
+          box-shadow: 0 4px 14px 0 var(--shadow-color-primary);
+          transform: scale(1);
+        }
+        50% {
+          box-shadow: 0 6px 20px 0 var(--shadow-color-primary);
+          transform: scale(1.05);
+        }
+      }
+
+      .animate-button-glow {
+        animation: button-glow 3s infinite ease-in-out;
+      }
+
+      /* VR Page Animations */
+      @keyframes text-focus-in {
+        0% { filter: blur(12px); opacity: 0; }
+        100% { filter: blur(0px); opacity: 1; }
+      }
+      @keyframes slide-in-bottom {
+        0% { transform: translateY(100px); opacity: 0; }
+        100% { transform: translateY(0); opacity: 1; }
+      }
+
+      @keyframes title-glow {
+        0%, 100% { text-shadow: 0 0 8px #c084fc, 0 0 16px #c084fc, 0 0 24px transparent; }
+        50% { text-shadow: 0 0 16px #c084fc, 0 0 24px #c084fc, 0 0 32px transparent; }
+      }
+      
+      .animate-title-word {
+        display: inline-block;
+        opacity: 0;
+        animation: text-focus-in 0.8s cubic-bezier(0.550, 0.085, 0.680, 0.530) forwards;
+      }
+      
+      .animate-hero-p {
+        opacity: 0;
+        animation: slide-in-bottom 1s cubic-bezier(0.250, 0.460, 0.450, 0.940) forwards;
+      }
+
+      .animate-glow {
+         animation: title-glow 4s ease-in-out infinite, text-focus-in 0.8s cubic-bezier(0.550, 0.085, 0.680, 0.530) forwards;
+         opacity: 0;
+      }
+      
+      @keyframes pulse-glow {
+        0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.15; }
+        50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.25; }
+      }
+
+      .hero-glow::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 60%;
+        height: 60%;
+        background: radial-gradient(circle, var(--accent-secondary) 0%, transparent 70%);
+        z-index: 0;
+        pointer-events: none;
+        animation: pulse-glow 8s infinite ease-in-out;
+        opacity: 0.15;
+      }
+      
+      /* AI Planner Animations */
+      @keyframes progress-bar-fill {
+        from { width: 0%; }
+      }
+
+      @keyframes slide-in-from-right {
+        from { opacity: 0; transform: translateX(20px); }
+        to { opacity: 1; transform: translateX(0); }
+      }
+      .animate-slide-in {
+        animation: slide-in-from-right 0.5s ease-out forwards;
+      }
+
+      @keyframes pulse-orb {
+        0%, 100% { transform: scale(1); box-shadow: 0 0 40px var(--shadow-color-secondary), 0 0 60px var(--shadow-color-primary); }
+        50% { transform: scale(1.05); box-shadow: 0 0 50px var(--shadow-color-secondary), 0 0 80px var(--shadow-color-primary); }
+      }
+
+      @keyframes loading-text-fade {
+        0%, 20%, 100% { opacity: 0; }
+        5%, 15% { opacity: 1; }
+      }
+      
+      .planner-loader p {
+        animation: loading-text-fade 8s infinite ease-in-out;
+      }
+
+      /* Featured Adventure Section */
+      .featured-adventure-bg {
+          background-color: var(--bg-secondary);
+          position: relative;
+          overflow: hidden;
+      }
+      .featured-adventure-bg::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-image:
+              radial-gradient(circle at 15% 20%, var(--shadow-color-secondary) 0%, transparent 30%),
+              radial-gradient(circle at 85% 80%, var(--shadow-color-primary) 0%, transparent 30%);
+          opacity: 0.25;
+          z-index: 0;
+      }
+      html[data-theme='light'] .featured-adventure-bg::before {
+          opacity: 0.15;
+      }
+      .featured-adventure-bg > * {
+          position: relative;
+          z-index: 1;
+      }
+
+      @keyframes content-fade-in {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .featured-content-anim {
+        animation: content-fade-in 0.8s ease-out forwards;
+      }
+      @keyframes image-zoom-in {
+        from { transform: scale(1.02); }
+        to { transform: scale(1.12); }
+      }
+      .featured-image-anim {
+        animation: image-zoom-in 10s ease-out forwards alternate;
+      }
+      @keyframes progress-fill {
+        from { width: 0%; }
+        to { width: 100%; }
+      }
+
+      .hero-progress-bar > div {
+        animation: progress-fill 8s linear infinite;
+      }
+
+      /* Interactive Map Marker Animation */
+      @keyframes pulse-marker {
+          0% { transform: rotate(-45deg) scale(0.95); box-shadow: 0 0 0 0 rgba(var(--accent-secondary-rgb), 0.7); }
+          70% { transform: rotate(-45deg) scale(1); box-shadow: 0 0 0 10px rgba(var(--accent-secondary-rgb), 0); }
+          100% { transform: rotate(-45deg) scale(0.95); box-shadow: 0 0 0 0 rgba(var(--accent-secondary-rgb), 0); }
+      }
+      .leaflet-pulsing-icon div {
+          animation: pulse-marker 2s infinite;
+      }
+
+      /* Meetup Page Gallery Animation */
+      @keyframes scroll-up {
+        from { transform: translateY(0); }
+        to { transform: translateY(-50%); }
+      }
+
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.9.5",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.28.0"
+  }
+}
+</script>
+</head>
+  <body>
+    <script>
+      // Flash prevention script
+      (function() {
+        const theme = localStorage.getItem('vanhsya-theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  </body>
+</html>
