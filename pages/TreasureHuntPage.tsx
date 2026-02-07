@@ -94,6 +94,17 @@ const AccessLevelCard: React.FC<{ level: string; title: string; price: string; u
     </div>
 );
 
+const TeamPhaseCard: React.FC<{ step: number; title: string; description: string; icon: string }> = ({ step, title, description, icon }) => (
+    <div className="p-8 bg-zinc-900/60 border border-zinc-800 rounded-2xl relative group hover:border-purple-500/40 transition-all duration-500">
+        <div className="absolute -top-5 left-8 w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center text-white font-black text-sm rotate-3 group-hover:rotate-12 transition-transform">
+            0{step}
+        </div>
+        <div className="text-4xl mb-6">{icon}</div>
+        <h3 className="text-xl font-bold font-cinzel text-white mb-4 uppercase tracking-widest">{title}</h3>
+        <p className="text-gray-400 text-sm leading-relaxed font-light">{description}</p>
+    </div>
+);
+
 const MysteryCard: React.FC<{ icon: React.ReactNode; title: string; description: string; color: string }> = ({ icon, title, description, color }) => (
     <div className={`p-8 rounded-xl border border-${color}-900/30 bg-black/80 backdrop-blur-md relative overflow-hidden group hover:border-${color}-500/60 transition-all duration-500 hover:shadow-[0_0_30px_rgba(0,0,0,0.5)]`}>
         <div className={`absolute inset-0 bg-gradient-to-br from-${color}-900/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
@@ -111,7 +122,7 @@ const LiveTicker: React.FC = () => (
     <div className="bg-purple-900 text-white py-2 overflow-hidden whitespace-nowrap border-y border-purple-500/50 relative z-50">
         <div className="animate-[slide-in-from-right_40s_linear_infinite] inline-block font-mono text-xs font-bold uppercase tracking-[0.3em]">
             <span className="mx-12 text-purple-300">/// VYNO COIN MINING ACTIVE ///</span>
-            <span className="mx-12">/// AGENT_X FOUND 'GENESIS BLOCK' (AED 33,000) ///</span>
+            <span className="mx-12">/// TEAM 'OMEGA' UNLOCKED DUBAI CRYPT (AED 12,000) ///</span>
             <span className="mx-12 text-yellow-400">/// PROTOCOL 333 ENGAGED IN DUBAI MARINA ///</span>
             <span className="mx-12">/// NEW DROP: THE PALM VAULT ///</span>
             <span className="mx-12 text-purple-300">/// GLOBAL LEDGER UPDATING... ///</span>
@@ -208,8 +219,131 @@ const TreasureHuntPage: React.FC = () => {
                 <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-purple-500 to-transparent opacity-50"></div>
             </section>
 
+            {/* Team-Based Scavenger Hunt Section */}
+            <section className="py-32 bg-black relative">
+                <div className="max-w-7xl mx-auto px-4">
+                    <AnimateOnScroll>
+                        <div className="text-center mb-20">
+                            <span className="text-purple-400 font-mono text-xs uppercase tracking-[0.4em] font-black">/// TEAM EXPEDITION PROTOCOL ///</span>
+                            <h2 className="text-5xl md:text-6xl font-cinzel font-black text-white mt-6 mb-8">Travel Together, Win Forever</h2>
+                            <p className="text-gray-400 max-w-3xl mx-auto text-xl font-light leading-relaxed">
+                                Join our signature expeditions where we split groups into competing squads. This isn't just sightseeing—it's a high-stakes race through the city's hidden layers.
+                            </p>
+                        </div>
+                    </AnimateOnScroll>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                        <AnimateOnScroll delay="0ms">
+                            <TeamPhaseCard 
+                                step={1}
+                                icon="🤝"
+                                title="The Recruitment"
+                                description="Travelers are analyzed and split into balanced teams. Meet your squad and synchronize your neural links before deployment."
+                            />
+                        </AnimateOnScroll>
+                        <AnimateOnScroll delay="200ms">
+                            <TeamPhaseCard 
+                                step={2}
+                                icon="🧩"
+                                title="Half-Clue Protocol"
+                                description="Each team receives only 50% of the mission data. To find the location, you must use logic, observation, and city-wide intelligence."
+                            />
+                        </AnimateOnScroll>
+                        <AnimateOnScroll delay="400ms">
+                            <TeamPhaseCard 
+                                step={3}
+                                icon="🕵️"
+                                title="The Infiltration"
+                                description="Navigate the Emirates using our AR-interface. Every landmark holds a piece of the final key. Stay silent, move fast."
+                            />
+                        </AnimateOnScroll>
+                        <AnimateOnScroll delay="600ms">
+                            <TeamPhaseCard 
+                                step={4}
+                                icon="🏆"
+                                title="Vault Breach"
+                                description="The first team to decrypt the final signal unlocks the master vault. Rewards are distributed instantly via the VYNO ledger."
+                            />
+                        </AnimateOnScroll>
+                    </div>
+
+                    {/* Half Details Visual Concept */}
+                    <div className="mt-20 p-10 bg-gradient-to-r from-purple-900/20 to-zinc-900/40 border border-white/5 rounded-[2.5rem] flex flex-col md:flex-row items-center gap-12 overflow-hidden relative">
+                         <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/grid.png')] pointer-events-none"></div>
+                         <div className="flex-1">
+                            <h3 className="text-3xl font-black font-cinzel text-white mb-6">The "Half-Detail" Mechanic</h3>
+                            <p className="text-gray-400 text-lg leading-relaxed mb-8">
+                                We give you the "Where" but not the "How". Or the "When" but not the "What". Teams must piece together fragmented data packets—such as distorted GPS coords, encrypted images of textures, or cryptic audio files—to locate the buried treasures.
+                            </p>
+                            <div className="flex flex-wrap gap-3">
+                                <span className="px-4 py-2 bg-black/60 border border-purple-500/30 rounded-full text-xs font-mono text-purple-300">FRAG_ID: 0x221A</span>
+                                <span className="px-4 py-2 bg-black/60 border border-purple-500/30 rounded-full text-xs font-mono text-purple-300">PARITY: 50%</span>
+                                <span className="px-4 py-2 bg-black/60 border border-purple-500/30 rounded-full text-xs font-mono text-purple-300">ENC: SHA-256</span>
+                            </div>
+                         </div>
+                         <div className="flex-1 w-full relative">
+                            <div className="aspect-video bg-zinc-950 border border-white/10 rounded-2xl overflow-hidden shadow-2xl relative">
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                     <div className="text-center">
+                                        <div className="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                                        <p className="font-mono text-xs text-purple-400 animate-pulse uppercase tracking-widest">Scanning Area for Signal...</p>
+                                     </div>
+                                </div>
+                                {/* Mock UI Elements */}
+                                <div className="absolute top-4 right-4 bg-red-500/20 border border-red-500/50 text-red-500 text-[10px] font-black px-2 py-1 uppercase animate-pulse">Live Tracker: OFF</div>
+                                <div className="absolute bottom-4 left-4 font-mono text-[8px] text-gray-600 space-y-1">
+                                    <p>LAT: 25.20####</p>
+                                    <p>LON: 55.27####</p>
+                                    <p>SYS: DEGRADED</p>
+                                </div>
+                            </div>
+                            <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-purple-600/20 rounded-full blur-3xl"></div>
+                         </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Recent Victories Leaderboard */}
+            <section className="py-24 bg-[#050505] border-y border-zinc-900">
+                <div className="max-w-5xl mx-auto px-4">
+                    <div className="text-center mb-16">
+                        <h2 className="text-4xl font-cinzel font-black text-white uppercase tracking-tighter">Expedition Leaderboard</h2>
+                        <p className="text-gray-500 font-mono text-sm mt-2 uppercase tracking-widest">/// RECENT DECRYPTIONS RECORDED ///</p>
+                    </div>
+                    
+                    <div className="space-y-4">
+                        {[
+                            { team: "OMEGA SQUAD", mission: "The Desert Crypt", loot: "12,000 VYNO + VIP Table", time: "1h 42m", status: "LEGENDARY" },
+                            { team: "NEON GHOSTS", mission: "Marina Oracle", loot: "5,500 VYNO + iPhone 15 Pro", time: "2h 11m", status: "ELITE" },
+                            { team: "VOX TRAVELERS", mission: "Old Dubai Signal", loot: "2,000 VYNO + Souk Keys", time: "3h 05m", status: "NOMAD" }
+                        ].map((winner, i) => (
+                            <div key={i} className="flex items-center justify-between p-6 bg-zinc-900/30 border border-white/5 rounded-xl hover:bg-zinc-900/50 transition-all group">
+                                <div className="flex items-center gap-6">
+                                    <div className="text-2xl font-black text-zinc-700 font-mono">0{i+1}</div>
+                                    <div>
+                                        <h4 className="text-lg font-bold text-white group-hover:text-purple-400 transition-colors uppercase tracking-widest">{winner.team}</h4>
+                                        <p className="text-xs text-gray-500 font-mono">Mission: {winner.mission}</p>
+                                    </div>
+                                </div>
+                                <div className="hidden md:block text-center">
+                                    <p className="text-xs text-gray-500 uppercase font-black mb-1">Time to Vault</p>
+                                    <p className="text-sm font-mono text-white">{winner.time}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-xs text-purple-400 font-black mb-1">Loot Secured</p>
+                                    <p className="text-sm font-bold text-white uppercase">{winner.loot}</p>
+                                </div>
+                                <div className="hidden sm:block ml-8">
+                                    <span className="px-3 py-1 bg-white/5 border border-white/10 rounded text-[10px] font-black text-gray-400 uppercase tracking-widest">{winner.status}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
             {/* 111, 222, 333 Pricing Protocols */}
-            <section className="py-32 relative bg-[#050505]">
+            <section className="py-32 relative bg-black">
                 <div className="max-w-7xl mx-auto px-4">
                     <AnimateOnScroll>
                         <div className="text-center mb-20">
@@ -234,7 +368,7 @@ const TreasureHuntPage: React.FC = () => {
                                     "Entry Level Mystery Box",
                                     "100 VYNO Coins (Guaranteed)",
                                     "Standard GPS Clues",
-                                    "Digital NFT Badge"
+                                    "Team-Level Chat Access"
                                 ]}
                             />
                         </AnimateOnScroll>
@@ -255,7 +389,7 @@ const TreasureHuntPage: React.FC = () => {
                                         "500 VYNO Coins + Multiplier",
                                         "AR-Enhanced Clues",
                                         "Chance for Hardware Wallets",
-                                        "Priority Support Channel"
+                                        "Squad Leader Status"
                                     ]}
                                 />
                             </div>
@@ -274,7 +408,7 @@ const TreasureHuntPage: React.FC = () => {
                                     "Legendary Mystery Box (10x Value)",
                                     "1,500 VYNO Coins + Staking",
                                     "Luxury Real-World Keys (Hotels/VIP)",
-                                    "Personal 'Handler' Guide",
+                                    "Full Mission Brief (Unrestricted Data)",
                                     "Exclusive DAO Voting Rights"
                                 ]}
                             />
@@ -283,49 +417,13 @@ const TreasureHuntPage: React.FC = () => {
                 </div>
             </section>
 
-             {/* The VYNO Coin Rewards */}
-             <section className="py-24 bg-gradient-to-b from-purple-900/10 to-black border-y border-purple-900/30">
-                <div className="max-w-6xl mx-auto px-4">
-                     <AnimateOnScroll>
-                        <div className="text-center mb-16">
-                            <span className="text-purple-400 font-mono text-xs uppercase tracking-[0.3em] font-bold">/// REWARD SYSTEM ///</span>
-                            <h2 className="text-4xl font-cinzel font-bold text-white mt-4 mb-4">What's In The Box?</h2>
-                            <p className="text-gray-400 max-w-2xl mx-auto">
-                                Every protocol key guarantees a reward. The question is: how rare is your loot?
-                            </p>
-                        </div>
-                    </AnimateOnScroll>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <MysteryCard 
-                            icon={<span className="text-4xl">💎</span>}
-                            title="VYNO Coin Bags"
-                            color="purple"
-                            description="The fuel of our ecosystem. Find bags ranging from 100 to 10,000 VYNO. Stake them for travel interest or trade on the marketplace (Coming Q4)."
-                        />
-                        <MysteryCard 
-                            icon={<span className="text-4xl">🗝️</span>}
-                            title="Physical Assets"
-                            color="blue"
-                            description="Unlock real-world treasures hidden in plain sight. Latest iPhones, DJI Drones, Luxury Watch Vouchers, and 5-Star Hotel Staycations."
-                        />
-                        <MysteryCard 
-                            icon={<span className="text-4xl">👑</span>}
-                            title="Status & Perks"
-                            color="yellow"
-                            description="Gain permanent status in the Vanhsya Network. Access VIP lounges, skip queues on tours, and get invited to private yacht parties."
-                        />
-                    </div>
-                </div>
-            </section>
-
              {/* Final CTA */}
              <section className="py-32 text-center px-4 relative overflow-hidden bg-black">
                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
                 <div className="relative z-10 max-w-3xl mx-auto">
-                    <h2 className="text-6xl font-cinzel font-black text-white mb-6">Join The Hunt</h2>
+                    <h2 className="text-6xl font-cinzel font-black text-white mb-6 uppercase tracking-tighter">Ready to Deploy?</h2>
                     <p className="text-purple-200/70 text-lg mb-12 max-w-xl mx-auto font-light">
-                        The blockchain meets the real world. Your adventure begins with a single key.
+                        The ledger is waiting. Join the next expedition and prove your team's tactical dominance.
                     </p>
                     <div className="flex flex-col sm:flex-row justify-center gap-6">
                         <button className="px-12 py-5 bg-white text-black font-black text-lg tracking-[0.2em] uppercase hover:bg-purple-400 transition-colors shadow-[0_0_50px_rgba(255,255,255,0.3)]">

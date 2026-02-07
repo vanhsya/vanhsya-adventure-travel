@@ -1,13 +1,12 @@
 
-
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { TOURS_DATA, CURRENCY_RATES_FROM_USD } from '../constants';
 import { useAppContext } from '../contexts/AppContext';
 import NotFoundPage from './NotFoundPage';
 import { GoogleGenAI } from "@google/genai";
 import InteractiveMap from '../components/InteractiveMap';
-import { ItineraryItem, MapMarkerData } from '../types';
+import { ItineraryItem, MapMarkerData, Booking } from '../types';
 import AnimateOnScroll from '../components/AnimateOnScroll';
 import SkeletonLoader from '../components/SkeletonLoader';
 import ErrorDisplay from '../components/ErrorDisplay';
@@ -210,7 +209,8 @@ const PricingOffer: React.FC<{ price: number, currency: string, discount?: numbe
 
 const TourDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
-  const { currency } = useAppContext();
+  const { currency, addBooking } = useAppContext();
+  const navigate = useNavigate();
   const [pax, setPax] = useState(1);
   const [weather, setWeather] = useState('');
   const [isWeatherLoading, setIsWeatherLoading] = useState(false);
@@ -224,6 +224,10 @@ const TourDetailPage: React.FC = () => {
   const [isVrModalOpen, setIsVrModalOpen] = useState(false);
   const [isVrLoading, setIsVrLoading] = useState(true);
   
+  // Booking Confirmation State
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [bookingId, setBookingId] = useState('');
+
   const tour = TOURS_DATA.find(t => t.slug === slug);
   const [selectedImage, setSelectedImage] = useState(tour?.images[0]);
 
@@ -235,11 +239,11 @@ const TourDetailPage: React.FC = () => {
     const handleEsc = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setIsVrModalOpen(false);
+        setIsBookingModalOpen(false);
       }
     };
     
-    if (isVrModalOpen) {
-      setIsVrLoading(true);
+    if (isVrModalOpen || isBookingModalOpen) {
       window.addEventListener('keydown', handleEsc);
       document.body.style.overflow = 'hidden';
     }
@@ -248,7 +252,7 @@ const TourDetailPage: React.FC = () => {
       window.removeEventListener('keydown', handleEsc);
       document.body.style.overflow = '';
     };
-  }, [isVrModalOpen]);
+  }, [isVrModalOpen, isBookingModalOpen]);
 
   const tourMarker: MapMarkerData[] = useMemo(() => {
     if (!tour) return [];
@@ -265,15 +269,15 @@ const TourDetailPage: React.FC = () => {
     setWeatherError('');
     setWeather('');
 
-    const prompt = `Provide a 5-day weather forecast for ${tour.city}, ${tour.country}. Include temperature in Celsius, weather conditions (e.g., Sunny, Cloudy with showers), and wind speed in km/h. Format the output as clean Markdown in a table format with columns: Day, Condition, Temp (°C), Wind (km/h). Add a single-sentence friendly summary at the top. For example: "Here's the 5-day forecast for sunny Dubai!"`;
+    const prompt = `Provide a 5-day weather forecast for ${tour.city}, ${tour.country}. Include temperature in Celsius, weather conditions (e.g., Sunny, Cloudy with showers), and wind speed in km/h. Format the output as clean Markdown in a table format with columns: Day, Condition, Temp (°C), Wind (km/h). Add a single-sentence friendly summary at the top.`;
 
     try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-flash-preview',
             contents: prompt,
         });
-        setWeather(response.text);
+        setWeather(response.text || '');
     } catch (err) {
         console.error(err);
         setWeatherError('Could not fetch weather data. Please try again.');
@@ -288,15 +292,15 @@ const TourDetailPage: React.FC = () => {
     setFunFactsError('');
     setFunFacts('');
 
-    const prompt = `Generate 3 to 5 interesting and little-known fun facts about ${tour.city}, ${tour.country}. Format the output as a clean Markdown bulleted list. Each fact should be concise and engaging for a traveler.`;
+    const prompt = `Generate 3 to 5 interesting and little-known fun facts about ${tour.city}, ${tour.country}. Format the output as a clean Markdown bulleted list.`;
 
     try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-flash-preview',
             contents: prompt,
         });
-        setFunFacts(response.text);
+        setFunFacts(response.text || '');
     } catch (err) {
         console.error(err);
         setFunFactsError('Could not fetch fun facts. Please try again.');
@@ -311,15 +315,15 @@ const TourDetailPage: React.FC = () => {
     setPackingListError('');
     setPackingList('');
 
-    const prompt = `Based on a trip to ${tour.city}, ${tour.country} for ${tour.durationHours > 24 ? Math.ceil(tour.durationHours / 24) : 1} day(s), what should I pack? The tour is described as: "${tour.description}". Provide a practical packing list. Consider the location and potential activities. Format the output as a clean Markdown list, categorized (e.g., Clothing, Essentials, Electronics).`;
+    const prompt = `Based on a trip to ${tour.city}, ${tour.country} for ${tour.durationHours > 24 ? Math.ceil(tour.durationHours / 24) : 1} day(s), what should I pack? The tour is described as: "${tour.description}". Format the output as a clean Markdown list, categorized.`;
 
     try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-flash-preview',
             contents: prompt,
         });
-        setPackingList(response.text);
+        setPackingList(response.text || '');
     } catch (err) {
         console.error(err);
         setPackingListError('Could not generate a packing list. Please try again.');
@@ -328,12 +332,34 @@ const TourDetailPage: React.FC = () => {
     }
   };
 
+  const handleBookNow = () => {
+    if (!tour) return;
+    
+    const id = 'VNS-' + Math.random().toString(36).substring(2, 9).toUpperCase();
+    const newBooking: Booking = {
+        id,
+        tourId: tour.id,
+        tourTitle: tour.title,
+        tourSlug: tour.slug,
+        tourImage: tour.images[0],
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        status: 'upcoming',
+        price: tour.basePriceUSD * pax,
+        currency: 'USD'
+    };
+    
+    addBooking(newBooking);
+    setBookingId(id);
+    setIsBookingModalOpen(true);
+  };
+
 
   if (!tour) {
     return <NotFoundPage />;
   }
 
   const currentPrice = tour.basePriceUSD;
+  const totalAmount = currentPrice * pax;
 
   return (
     <div className="pt-24" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)'}}>
@@ -362,7 +388,7 @@ const TourDetailPage: React.FC = () => {
 
           <div className="lg:col-span-2">
             <AnimateOnScroll delay="200ms">
-              <h1 className="text-3xl md:text-4xl font-bold">{tour.title}</h1>
+              <h1 className="text-3xl md:text-4xl font-bold font-cinzel">{tour.title}</h1>
               <div className="text-md mt-2" style={{ color: 'var(--text-secondary)'}}>
                 <span>{tour.durationHours > 0 ? `${tour.durationHours} hours` : 'Flexible'}</span> &bull; 
                 <span> {tour.city}, {tour.country}</span>
@@ -390,13 +416,15 @@ const TourDetailPage: React.FC = () => {
               </div>
 
               <div className="mt-6 space-y-4">
-                  <button className="w-full px-6 py-3 text-white font-bold rounded-lg shadow-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--bg-primary)]"
+                  <button 
+                    onClick={handleBookNow}
+                    className="w-full px-6 py-4 text-white font-black uppercase tracking-widest rounded-lg shadow-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--bg-primary)]"
                     style={{ 
                       backgroundColor: 'var(--accent-primary)',
                       boxShadow: `0 4px 14px 0 var(--shadow-color-primary)`,
                       '--ring-color': 'var(--accent-primary)'
                     } as React.CSSProperties}>
-                      Book Now
+                      Book Adventure Now
                   </button>
                   {tour.vrPreviewUrl && (
                       <button
@@ -407,57 +435,29 @@ const TourDetailPage: React.FC = () => {
                           Launch VR Preview
                       </button>
                   )}
-                  <button 
-                      onClick={handleFetchWeather} 
-                      disabled={isWeatherLoading}
-                      className="w-full px-6 py-3 bg-indigo-600 text-white font-bold rounded-lg shadow-lg shadow-indigo-600/30 hover:bg-indigo-700 transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--bg-primary)] focus:ring-indigo-500 disabled:bg-gray-500 disabled:cursor-not-allowed flex items-center justify-center"
-                  >
-                      {isWeatherLoading ? (
-                          <>
-                              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              Fetching Weather...
-                          </>
-                      ) : (
-                          'View 5-Day Forecast'
-                      )}
-                  </button>
-                  <button 
-                      onClick={handleFetchFunFacts} 
-                      disabled={isFunFactsLoading}
-                      className="w-full px-6 py-3 bg-teal-600 text-white font-bold rounded-lg shadow-lg shadow-teal-600/30 hover:bg-teal-700 transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--bg-primary)] focus:ring-teal-500 disabled:bg-gray-500 disabled:cursor-not-allowed flex items-center justify-center"
-                  >
-                      {isFunFactsLoading ? (
-                          <>
-                              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              Finding Fun Facts...
-                          </>
-                      ) : (
-                          'Discover Fun Facts'
-                      )}
-                  </button>
-                  <button 
-                      onClick={handleFetchPackingList} 
-                      disabled={isPackingListLoading}
-                      className="w-full px-6 py-3 bg-orange-600 text-white font-bold rounded-lg shadow-lg shadow-orange-600/30 hover:bg-orange-700 transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--bg-primary)] focus:ring-orange-500 disabled:bg-gray-500 disabled:cursor-not-allowed flex items-center justify-center"
-                  >
-                      {isPackingListLoading ? (
-                          <>
-                              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              Generating List...
-                          </>
-                      ) : (
-                          <><PackingIcon /> Get Packing List</>
-                      )}
-                  </button>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <button 
+                          onClick={handleFetchWeather} 
+                          disabled={isWeatherLoading}
+                          className="px-4 py-3 bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 font-bold rounded-lg hover:bg-indigo-600 hover:text-white transition-all disabled:opacity-50 flex items-center justify-center text-xs uppercase"
+                      >
+                          {isWeatherLoading ? '...' : 'Weather'}
+                      </button>
+                      <button 
+                          onClick={handleFetchFunFacts} 
+                          disabled={isFunFactsLoading}
+                          className="px-4 py-3 bg-teal-600/20 border border-teal-500/30 text-teal-300 font-bold rounded-lg hover:bg-teal-600 hover:text-white transition-all disabled:opacity-50 flex items-center justify-center text-xs uppercase"
+                      >
+                          {isFunFactsLoading ? '...' : 'Fun Facts'}
+                      </button>
+                      <button 
+                          onClick={handleFetchPackingList} 
+                          disabled={isPackingListLoading}
+                          className="px-4 py-3 bg-orange-600/20 border border-orange-500/30 text-orange-300 font-bold rounded-lg hover:bg-orange-600 hover:text-white transition-all disabled:opacity-50 flex items-center justify-center text-xs uppercase"
+                      >
+                          {isPackingListLoading ? '...' : 'Packing'}
+                      </button>
+                  </div>
               </div>
 
               <div className="mt-6 text-sm bg-purple-500/10 border border-purple-500/30 p-3 rounded-md" style={{ color: 'var(--accent-secondary)'}}>
@@ -480,7 +480,7 @@ const TourDetailPage: React.FC = () => {
           <AnimateOnScroll>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                 <div>
-                    <h2 className="text-2xl font-bold mb-4">What's Included</h2>
+                    <h2 className="text-2xl font-bold mb-4 font-cinzel">What's Included</h2>
                     <ul className="space-y-3">
                     {tour.inclusions.map((item, index) => (
                         <li key={index} className="flex items-start">
@@ -489,7 +489,7 @@ const TourDetailPage: React.FC = () => {
                         </li>
                     ))}
                     </ul>
-                    <h2 className="text-2xl font-bold mb-4 mt-8">What's Not Included</h2>
+                    <h2 className="text-2xl font-bold mb-4 mt-8 font-cinzel">What's Not Included</h2>
                     <ul className="space-y-3">
                     {tour.exclusions.map((item, index) => (
                         <li key={index} className="flex items-start">
@@ -501,7 +501,7 @@ const TourDetailPage: React.FC = () => {
                 </div>
                 {tour.sampleItinerary && tour.sampleItinerary.length > 0 && (
                     <div>
-                        <h2 className="text-2xl font-bold mb-4">Sample Itinerary</h2>
+                        <h2 className="text-2xl font-bold mb-4 font-cinzel">Sample Itinerary</h2>
                         <ItineraryAccordion items={tour.sampleItinerary} />
                     </div>
                 )}
@@ -512,7 +512,7 @@ const TourDetailPage: React.FC = () => {
 
         <AnimateOnScroll>
             <div className="max-w-6xl mx-auto px-4 mt-16">
-                <h2 className="text-2xl font-bold mb-4">Location</h2>
+                <h2 className="text-2xl font-bold mb-4 font-cinzel">Location</h2>
                 <InteractiveMap 
                 key={`${tour.latitude}-${tour.longitude}`}
                 centerLat={tour.latitude}
@@ -566,6 +566,7 @@ const TourDetailPage: React.FC = () => {
 
       </div>
 
+      {/* --- VR Modal --- */}
       {isVrModalOpen && tour.vrPreviewUrl && (
           <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 animate-fadeIn" onClick={() => setIsVrModalOpen(false)}>
               <div className="relative w-full max-w-4xl bg-black rounded-lg shadow-2xl shadow-purple-500/20" onClick={e => e.stopPropagation()}>
@@ -597,6 +598,55 @@ const TourDetailPage: React.FC = () => {
                   >
                       &times;
                   </button>
+              </div>
+          </div>
+      )}
+
+      {/* --- Booking Confirmation Modal --- */}
+      {isBookingModalOpen && (
+          <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4 animate-fadeIn" onClick={() => setIsBookingModalOpen(false)}>
+              <div className="relative w-full max-w-lg bg-[var(--bg-secondary)] border border-[var(--accent-primary)] rounded-2xl shadow-2xl overflow-hidden p-8 text-center" onClick={e => e.stopPropagation()}>
+                  <div className="mb-6 w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto border-2 border-green-500 shadow-[0_0_20px_rgba(34,197,94,0.4)]">
+                      <svg className="w-10 h-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                  </div>
+                  <h2 className="text-3xl font-black font-cinzel text-white mb-2 uppercase tracking-widest">Adventure Locked!</h2>
+                  <p className="text-gray-400 mb-8">Your ticket to {tour.city} has been issued.</p>
+                  
+                  <div className="bg-black/40 border border-white/5 rounded-xl p-6 text-left mb-10 space-y-4">
+                      <div className="flex justify-between border-b border-white/5 pb-2">
+                          <span className="text-xs text-gray-500 uppercase font-bold tracking-tighter">Tour</span>
+                          <span className="text-sm font-bold text-white">{tour.title}</span>
+                      </div>
+                      <div className="flex justify-between border-b border-white/5 pb-2">
+                          <span className="text-xs text-gray-500 uppercase font-bold tracking-tighter">Booking ID</span>
+                          <span className="text-sm font-mono font-bold text-[var(--accent-primary)]">{bookingId}</span>
+                      </div>
+                      <div className="flex justify-between border-b border-white/5 pb-2">
+                          <span className="text-xs text-gray-500 uppercase font-bold tracking-tighter">Guests</span>
+                          <span className="text-sm font-bold text-white">{pax} Traveler(s)</span>
+                      </div>
+                      <div className="flex justify-between">
+                          <span className="text-xs text-gray-500 uppercase font-bold tracking-tighter">Total Paid</span>
+                          <span className="text-lg font-black text-[var(--accent-secondary)]">{currency} {(totalAmount * (CURRENCY_RATES_FROM_USD[currency] || 1)).toLocaleString()}</span>
+                      </div>
+                  </div>
+
+                  <div className="flex flex-col gap-3">
+                      <button 
+                        onClick={() => navigate('/dashboard')}
+                        className="w-full py-4 bg-white text-black font-black uppercase tracking-widest rounded-xl hover:bg-gray-200 transition-colors shadow-lg shadow-white/10"
+                      >
+                          View In My Passport
+                      </button>
+                      <button 
+                        onClick={() => setIsBookingModalOpen(false)}
+                        className="w-full py-3 bg-transparent text-gray-400 font-bold hover:text-white transition-colors"
+                      >
+                          Close
+                      </button>
+                  </div>
               </div>
           </div>
       )}

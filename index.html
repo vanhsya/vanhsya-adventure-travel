@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -287,6 +288,30 @@
         to { transform: translateY(-50%); }
       }
 
+      /* Interaction Utilities */
+      .click-pulse:active {
+        transform: scale(0.95);
+        transition: transform 0.1s;
+      }
+      
+      @keyframes select-pop {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1.05); }
+      }
+      .animate-select-pop {
+        animation: select-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+      }
+
+      @keyframes stagger-in {
+        from { opacity: 0; transform: translateY(15px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .stagger-item {
+        opacity: 0;
+        animation: stagger-in 0.5s ease-out forwards;
+      }
+
     </style>
   <script type="importmap">
 {
@@ -295,7 +320,8 @@
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "react": "https://aistudiocdn.com/react@^19.2.0",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.28.0"
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.28.0",
+    "@/": "./"
   }
 }
 </script>

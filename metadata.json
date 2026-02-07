@@ -2,6 +2,7 @@
   "name": "Copy of VANHSYA-GLOBAL-TRAVELS ",
   "description": "A world-class travel platform to book adventures, join meetups, and earn rewards. This application showcases a travel booking website with features like multi-currency support and detailed tour pages.",
   "requestFramePermissions": [
-    "geolocation"
+    "geolocation",
+    "microphone"
   ]
 }

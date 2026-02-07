@@ -1,5 +1,4 @@
 
-
 export interface Hotspot {
   title: string;
   description: string;
@@ -88,4 +87,16 @@ export interface Meetup {
   attendees: number;
   capacity: number;
   description: string;
+}
+
+export interface Booking {
+  id: string;
+  tourId: number;
+  tourTitle: string;
+  tourSlug: string;
+  tourImage: string;
+  date: string;
+  status: 'upcoming' | 'completed' | 'cancelled';
+  price: number;
+  currency: string;
 }

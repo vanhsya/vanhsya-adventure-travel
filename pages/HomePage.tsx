@@ -62,25 +62,25 @@ const StatCounter: React.FC<{ target: number, isDecimal?: boolean, suffix?: stri
     };
   }, [target, isDecimal, suffix, prefix]);
 
-  return <p ref={ref} className="text-4xl lg:text-5xl font-bold mb-2" style={{ color: 'var(--accent-secondary)'}}>0</p>;
+  return <p ref={ref} className="text-4xl lg:text-5xl font-black mb-2" style={{ color: 'var(--accent-secondary)'}}>0</p>;
 };
 
 const VisionCard: React.FC<{ icon: React.ReactNode; title: string; description: string }> = ({ icon, title, description }) => (
-  <div className="p-6 rounded-xl border transition-all duration-300 h-full hover:border-[var(--accent-primary)] hover:shadow-lg hover:shadow-[var(--shadow-color-primary)]" style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)'}}>
-      <div className="flex items-center justify-center h-12 w-12 rounded-full mb-4" style={{ backgroundColor: 'rgba(192, 132, 252, 0.1)', color: 'var(--accent-secondary)'}}>
+  <div className="p-8 rounded-3xl border transition-all duration-500 h-full hover:border-[var(--accent-primary)]/40 hover:bg-white/5 hover:shadow-2xl hover:shadow-[var(--shadow-color-primary)]/10" style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)'}}>
+      <div className="flex items-center justify-center h-14 w-14 rounded-2xl mb-6 shadow-lg shadow-purple-500/10" style={{ backgroundColor: 'rgba(138, 43, 226, 0.15)', color: 'var(--accent-secondary)'}}>
         {icon}
       </div>
-      <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)'}}>{title}</h3>
-      <p className="text-sm" style={{ color: 'var(--text-secondary)'}}>{description}</p>
+      <h3 className="text-2xl font-black mb-3 font-cinzel tracking-tight" style={{ color: 'var(--text-primary)'}}>{title}</h3>
+      <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)'}}>{description}</p>
   </div>
 );
 
-const BlockchainIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 9l4-4 4 4m0 6l-4 4-4-4" /><path d="M4 12h16" /><path d="M12 4v16" /></svg>;
-const CommunityIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.653-.125-1.274-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.653.125-1.274.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>;
-const RealWorldIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2h8a2 2 0 002-2v-1a2 2 0 012-2h1.945M7.886 21h8.228M12 21a9 9 0 110-18 9 9 0 010 18z" /></svg>;
+const BlockchainIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 9l4-4 4 4m0 6l-4 4-4-4" /><path d="M4 12h16" /><path d="M12 4v16" /></svg>;
+const CommunityIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.653-.125-1.274-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.653.125-1.274.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>;
+const RealWorldIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2h8a2 2 0 002-2v-1a2 2 0 012-2h1.945M7.886 21h8.228M12 21a9 9 0 110-18 9 9 0 010 18z" /></svg>;
 
 const CheckmarkIcon = () => (
-    <div className="flex-shrink-0 h-12 w-12 rounded-full flex items-center justify-center mr-4 bg-white/10" style={{ borderColor: 'var(--border-color)' }}>
+    <div className="flex-shrink-0 h-12 w-12 rounded-full flex items-center justify-center mr-4 bg-white/5 border border-white/5" style={{ borderColor: 'var(--border-color)' }}>
         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" style={{color: 'var(--accent-primary)'}} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
         </svg>
@@ -155,7 +155,7 @@ const HomePage: React.FC = () => {
             />
           ))}
         </div>
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/30"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/30"></div>
         <div 
           className="relative z-10 transition-transform duration-300 ease-out"
           style={{
@@ -173,7 +173,7 @@ const HomePage: React.FC = () => {
           </div>
           <div className="mt-12 animate-hero-text">
             <span style={{ animationDelay: '1.0s' }}>
-              <Link to="/ai-planner" className="inline-block text-black font-bold py-4 px-10 rounded-full transition-transform transform hover:scale-110 animate-button-glow" style={{ backgroundColor: 'var(--accent-primary)' }}>
+              <Link to="/ai-planner" className="inline-block text-black font-black uppercase tracking-widest text-sm py-5 px-12 rounded-full transition-all transform hover:scale-110 animate-button-glow hover:shadow-[0_0_30px_rgba(0,242,254,0.5)]" style={{ backgroundColor: 'var(--accent-primary)' }}>
                 Plan Your Journey
               </Link>
             </span>
@@ -185,64 +185,64 @@ const HomePage: React.FC = () => {
       </section>
 
       {/* Winter Promo Section */}
-      <section className="bg-gradient-to-r from-blue-900 to-indigo-900 py-4 relative overflow-hidden border-y border-blue-500/30">
+      <section className="bg-gradient-to-r from-blue-900 to-indigo-900 py-5 relative overflow-hidden border-y border-blue-500/30">
         <div className="absolute top-0 left-0 w-full h-full opacity-20 bg-[url('https://www.transparenttextures.com/patterns/snow.png')]"></div>
-        <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between relative z-10">
-            <div className="flex items-center mb-2 md:mb-0">
-                <span className="text-3xl mr-3">❄️</span>
+        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between relative z-10">
+            <div className="flex items-center mb-3 md:mb-0">
+                <span className="text-4xl mr-4 animate-bounce">❄️</span>
                 <div>
-                    <h3 className="font-bold text-white text-lg">Winter Wanderlust Sale</h3>
-                    <p className="text-blue-200 text-sm">Newcomers get <span className="text-white font-bold">$50 OFF</span> their first booking!</p>
+                    <h3 className="font-black text-white text-xl uppercase tracking-tighter">Winter Wanderlust Protocol</h3>
+                    <p className="text-blue-200 text-sm font-medium">New explorers get <span className="text-white font-black">$50 / 185 AED OFF</span> their first expedition.</p>
                 </div>
             </div>
-            <div className="flex items-center gap-4">
-                 <div className="bg-white/10 px-4 py-2 rounded text-sm font-mono text-blue-200 border border-blue-400/30">
-                    Code: <span className="text-white font-bold">VANHSYA24</span>
+            <div className="flex items-center gap-5">
+                 <div className="bg-black/40 backdrop-blur-md px-6 py-3 rounded-xl text-sm font-mono text-blue-200 border border-blue-400/30">
+                    ACCESS_KEY: <span className="text-white font-black">VANHSYA24</span>
                  </div>
-                 <Link to="/ai-planner" className="text-sm font-bold text-white hover:text-blue-300 transition-colors">Book Now &rarr;</Link>
+                 <Link to="/ai-planner" className="text-sm font-black text-white hover:text-blue-300 transition-colors uppercase tracking-[0.2em]">Book Now &rarr;</Link>
             </div>
         </div>
       </section>
 
       {/* Top Adventure Section */}
       {featuredTour && (
-        <section className="py-16 lg:py-24 featured-adventure-bg">
+        <section className="py-16 lg:py-32 featured-adventure-bg">
           <div className="max-w-7xl mx-auto px-4">
-              <div className="grid md:grid-cols-2 gap-10 lg:gap-20 items-center">
+              <div className="grid md:grid-cols-2 gap-10 lg:gap-24 items-center">
                 <AnimateOnScroll>
-                  <div className="relative group overflow-hidden rounded-2xl transform rotate-1 hover:rotate-0 transition-transform duration-500">
-                    <div className="absolute -inset-2.5 bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] rounded-2xl opacity-70 blur-lg animate-pulse"></div>
-                    <div className="relative rounded-xl overflow-hidden shadow-2xl">
+                  <div className="relative group overflow-hidden rounded-3xl transform rotate-1 hover:rotate-0 transition-all duration-700 shadow-2xl">
+                    <div className="absolute -inset-4 bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] rounded-3xl opacity-40 blur-2xl group-hover:opacity-60 transition-opacity"></div>
+                    <div className="relative rounded-2xl overflow-hidden">
                         <img src={featuredTour.images[0]} alt={featuredTour.title} className="w-full aspect-[4/3] object-cover featured-image-anim" />
-                        <div className="absolute bottom-4 right-4 bg-white/90 text-black px-4 py-1 rounded-full font-bold text-sm">
-                           Premium Experience
+                        <div className="absolute bottom-6 right-6 bg-white/10 backdrop-blur-xl border border-white/20 text-white px-5 py-2 rounded-2xl font-black text-xs uppercase tracking-widest">
+                           Premium Protocol
                         </div>
                     </div>
                   </div>
                 </AnimateOnScroll>
                 <AnimateOnScroll delay="200ms" className="featured-content-anim">
                   <div className="relative z-10">
-                    <span className="text-sm font-bold uppercase tracking-widest border-b-2 pb-1" style={{ color: 'var(--accent-primary)', borderColor: 'var(--accent-primary)' }}>Top Rated Experience</span>
-                    <h2 className="text-4xl md:text-5xl font-bold mt-4 font-cinzel" style={{ color: 'var(--text-primary)' }}>{featuredTour.title}</h2>
-                    <p className="mt-6 text-lg leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{featuredTour.description}</p>
-                    <div className="mt-8 grid grid-cols-1 gap-4">
-                        <div className="flex items-center p-3 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)]">
+                    <span className="text-xs font-black uppercase tracking-[0.4em] border-b-2 pb-2" style={{ color: 'var(--accent-primary)', borderColor: 'var(--accent-primary)' }}>Mission Critical Adventure</span>
+                    <h2 className="text-4xl md:text-6xl font-black mt-6 font-cinzel tracking-tighter" style={{ color: 'var(--text-primary)' }}>{featuredTour.title}</h2>
+                    <p className="mt-8 text-xl leading-relaxed font-light opacity-90" style={{ color: 'var(--text-secondary)' }}>{featuredTour.description}</p>
+                    <div className="mt-10 space-y-5">
+                        <div className="flex items-center p-4 rounded-2xl bg-[var(--bg-primary)] border border-white/5 shadow-xl hover:border-cyan-500/30 transition-all">
                              <CheckmarkIcon />
                              <div>
-                                 <h4 className="font-bold" style={{ color: 'var(--text-primary)' }}>Dune Bashing & BBQ</h4>
-                                 <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Thrills followed by flavor.</p>
+                                 <h4 className="font-black text-white uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>Red Dune Penetration</h4>
+                                 <p className="text-sm opacity-60" style={{ color: 'var(--text-secondary)' }}>High-intensity bashing followed by sunset BBQ.</p>
                              </div>
                         </div>
-                        <div className="flex items-center p-3 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)]">
+                        <div className="flex items-center p-4 rounded-2xl bg-[var(--bg-primary)] border border-white/5 shadow-xl hover:border-cyan-500/30 transition-all">
                              <CheckmarkIcon />
                              <div>
-                                 <h4 className="font-bold" style={{ color: 'var(--text-primary)' }}>VIP Service Available</h4>
-                                 <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Upgrade for table service & private 4x4.</p>
+                                 <h4 className="font-black text-white uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>VIP Node Access</h4>
+                                 <p className="text-sm opacity-60" style={{ color: 'var(--text-secondary)' }}>Exclusive table service & luxury transport upgrades.</p>
                              </div>
                         </div>
                     </div>
-                    <Link to={`/tours/${featuredTour.slug}`} className="mt-10 inline-block text-white font-bold py-4 px-10 rounded-lg transition-transform transform hover:scale-105" style={{ backgroundColor: 'var(--accent-secondary)', boxShadow: `0 4px 20px 0 var(--shadow-color-secondary)`}}>
-                      Book Adventure
+                    <Link to={`/tours/${featuredTour.slug}`} className="mt-12 inline-block text-white font-black py-5 px-12 rounded-2xl transition-all transform hover:scale-105 hover:shadow-2xl uppercase tracking-[0.2em] text-sm" style={{ backgroundColor: 'var(--accent-secondary)', boxShadow: `0 10px 40px -10px var(--shadow-color-secondary)`}}>
+                      Commence Journey
                     </Link>
                   </div>
                 </AnimateOnScroll>
@@ -252,46 +252,47 @@ const HomePage: React.FC = () => {
       )}
 
       {/* Stats Section */}
-      <section className="py-16 border-y" style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)'}}>
+      <section className="py-20 border-y border-white/5" style={{ backgroundColor: 'var(--bg-secondary)'}}>
           <div className="max-w-6xl mx-auto px-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
               <AnimateOnScroll>
                 <div>
                   <StatCounter target={50} suffix="+" />
-                  <h3 className="text-xl font-semibold" style={{ color: 'var(--text-primary)'}}>Global Destinations</h3>
+                  <h3 className="text-sm font-black uppercase tracking-[0.3em] opacity-40 mt-3" style={{ color: 'var(--text-primary)'}}>Global Nodes</h3>
                 </div>
               </AnimateOnScroll>
               <AnimateOnScroll delay="200ms">
                 <div>
-                  <StatCounter target={200} suffix="+" />
-                  <h3 className="text-xl font-semibold" style={{ color: 'var(--text-primary)'}}>Curated Tours</h3>
+                  <StatCounter target={2400} suffix="+" />
+                  <h3 className="text-sm font-black uppercase tracking-[0.3em] opacity-40 mt-3" style={{ color: 'var(--text-primary)'}}>Expeditions Logged</h3>
                 </div>
               </AnimateOnScroll>
               <AnimateOnScroll delay="400ms">
                 <div>
                   <StatCounter target={100} suffix="%" />
-                  <h3 className="text-xl font-semibold" style={{ color: 'var(--text-primary)'}}>Adventure Guaranteed</h3>
+                  <h3 className="text-sm font-black uppercase tracking-[0.3em] opacity-40 mt-3" style={{ color: 'var(--text-primary)'}}>Mission Success</h3>
                 </div>
               </AnimateOnScroll>
             </div>
           </div>
       </section>
 
-      {/* Global Adventures Section */}
-      <section className="py-20" style={{ backgroundColor: 'var(--bg-primary)'}}>
+      {/* Global Favorites Section - PINTEREST STYLE */}
+      <section className="py-24 bg-[#0A0A10]">
         <div className="max-w-7xl mx-auto px-4">
           <AnimateOnScroll>
-            <div className="flex flex-col md:flex-row justify-between items-end mb-12">
-                <div>
-                    <h2 className="text-3xl md:text-4xl font-bold font-cinzel" style={{ color: 'var(--text-primary)'}}>Global Favorites</h2>
-                    <p className="mt-2" style={{ color: 'var(--text-secondary)'}}>Explore our most popular international journeys.</p>
+            <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+                <div className="bg-white/5 backdrop-blur-md p-6 rounded-3xl border border-white/10">
+                    <h2 className="text-4xl md:text-5xl font-black font-cinzel text-white tracking-tighter">Global Favorites</h2>
+                    <p className="mt-3 text-cyan-400 font-mono text-sm uppercase tracking-widest">/// Re-imagine your world with AI Magic</p>
                 </div>
-                <Link to="/ai-planner" className="mt-4 md:mt-0 text-[var(--accent-secondary)] font-bold hover:underline">View All Destinations &rarr;</Link>
+                <Link to="/ai-planner" className="px-8 py-3 bg-white/5 border border-white/10 rounded-full text-xs font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all">Explore Full Matrix &rarr;</Link>
             </div>
           </AnimateOnScroll>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
             {TOURS_DATA.filter(t => t.slug !== 'dubai-desert-safari').map((tour, index) => (
-              <AnimateOnScroll key={tour.id} delay={`${index * 150}ms`}>
+              <AnimateOnScroll key={tour.id} delay={`${index * 100}ms`}>
                 <TourCard tour={tour} currency={currency} />
               </AnimateOnScroll>
             ))}
@@ -300,52 +301,56 @@ const HomePage: React.FC = () => {
       </section>
 
       {/* Interactive Map Section */}
-      <section className="py-20" style={{ backgroundColor: 'var(--bg-secondary)'}}>
-        <div className="max-w-6xl mx-auto px-4">
+      <section className="py-32 bg-[#050505]">
+        <div className="max-w-7xl mx-auto px-4">
           <AnimateOnScroll>
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold font-cinzel" style={{ color: 'var(--text-primary)'}}>Interactive Destination Map</h2>
-              <p className="mt-2" style={{ color: 'var(--text-secondary)'}}>Explore our tour locations across the globe.</p>
+            <div className="text-center mb-20">
+              <span className="text-[10px] font-black uppercase tracking-[0.5em] text-purple-400">Tactical Visualization</span>
+              <h2 className="text-4xl md:text-6xl font-black font-cinzel text-white mt-4 tracking-tighter">Planetary Node Distribution</h2>
+              <p className="mt-4 text-gray-500 font-light text-lg">Locate your next mission entry point on our global grid.</p>
             </div>
-            <InteractiveMap 
-              centerLat={25} 
-              centerLng={20} 
-              zoom={2} 
-              markers={mapMarkers} 
-            />
+            <div className="relative group">
+                <div className="absolute -inset-2 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-3xl blur opacity-20 group-hover:opacity-40 transition-opacity"></div>
+                <InteractiveMap 
+                centerLat={25} 
+                centerLng={20} 
+                zoom={2} 
+                markers={mapMarkers} 
+                />
+            </div>
           </AnimateOnScroll>
         </div>
       </section>
       
       {/* Vanhsya Difference Section */}
-      <section className="py-20" style={{ backgroundColor: 'var(--bg-primary)'}}>
-        <div className="max-w-6xl mx-auto px-4">
+      <section className="py-32 bg-[#0A0A10]">
+        <div className="max-w-7xl mx-auto px-4">
             <AnimateOnScroll>
-                <div className="text-center mb-16">
-                    <h2 className="text-3xl md:text-5xl font-black font-cinzel text-transparent bg-clip-text bg-gradient-to-r from-[var(--accent-primary)] via-purple-500 to-[var(--accent-secondary)] drop-shadow-md">The Future of Travel</h2>
-                    <p className="mt-4 max-w-3xl mx-auto text-lg md:text-xl font-light leading-relaxed" style={{ color: 'var(--text-secondary)' }}>We're building a decentralized travel ecosystem powered by cutting-edge technology for a more secure, transparent, and rewarding journey.</p>
+                <div className="text-center mb-20">
+                    <h2 className="text-4xl md:text-7xl font-black font-cinzel text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-white to-purple-500 tracking-tighter">The Travel Architect</h2>
+                    <p className="mt-8 max-w-3xl mx-auto text-xl font-light leading-relaxed text-gray-400">We don't book tours. We engineer experiences. Using a decentralized neural network to optimize every step of your journey.</p>
                 </div>
             </AnimateOnScroll>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
                 <AnimateOnScroll delay="0ms">
                     <VisionCard 
                         icon={<BlockchainIcon />} 
-                        title="Blockchain Security" 
-                        description="Your bookings and rewards are secured on the blockchain, ensuring transparent and immutable transactions."
+                        title="Immutable Ledger" 
+                        description="Bookings secured on-chain. Transparent rewards. Total ownership of your global footprint."
                     />
                 </AnimateOnScroll>
                 <AnimateOnScroll delay="200ms">
                     <VisionCard 
                         icon={<CommunityIcon />} 
-                        title="Decentralized Community" 
-                        description="Join a travel ecosystem governed by its members. Your voice matters in shaping the future of Vanhsya."
+                        title="The Tribe Protocol" 
+                        description="Access exclusive Stranger Meetups governed by community reputation and verification."
                     />
                 </AnimateOnScroll>
                 <AnimateOnScroll delay="400ms">
                     <VisionCard 
                         icon={<RealWorldIcon />} 
-                        title="AI & VR Integration"
-                        description="From personalized AI-planned trips to immersive VR previews, we bridge the digital and physical worlds."
+                        title="AI-Sensing Matrix"
+                        description="Dynamic AI planning that adapts to local weather, pricing volatility, and crowd density in real-time."
                     />
                 </AnimateOnScroll>
             </div>
@@ -353,15 +358,15 @@ const HomePage: React.FC = () => {
       </section>
 
       {/* AI Planner CTA */}
-      <section className="py-20 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-purple-900 to-indigo-900 opacity-90"></div>
+      <section className="py-32 relative overflow-hidden bg-black">
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-900/40 to-blue-900/40 opacity-90"></div>
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=2021&auto=format&fit=crop')] bg-cover bg-center mix-blend-overlay"></div>
         <AnimateOnScroll>
             <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
-              <h2 className="text-3xl md:text-5xl font-bold text-white font-cinzel">Can't Decide? Let AI Help!</h2>
-              <p className="mt-6 text-xl text-gray-200">Our intelligent planner crafts personalized itineraries based on your interests, budget, and travel style.</p>
-              <Link to="/ai-planner" className="mt-10 inline-block text-black font-bold py-4 px-10 rounded-full shadow-lg transition-transform transform hover:scale-105" style={{ backgroundColor: 'var(--accent-primary)', boxShadow: `0 4px 20px 0 rgba(0,0,0,0.5)`}}>
-                Plan Your Dream Trip
+              <h2 className="text-5xl md:text-7xl font-black text-white font-cinzel tracking-tighter">Design Your Legacy</h2>
+              <p className="mt-8 text-2xl text-gray-300 font-light leading-relaxed">Our AI architect synthesizes millions of data points to craft your signature global blueprint.</p>
+              <Link to="/ai-planner" className="mt-12 inline-block text-black font-black py-6 px-16 rounded-full shadow-2xl transition-all transform hover:scale-110 uppercase tracking-[0.3em] text-sm hover:shadow-cyan-500/40" style={{ backgroundColor: 'var(--accent-primary)' }}>
+                Initialize AI Architect
               </Link>
             </div>
         </AnimateOnScroll>
