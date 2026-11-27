@@ -1,8 +1,7 @@
-
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { getCookie, setCookie } from '../utils/cookies';
 import { LANGS, CURRENCIES } from '../constants';
-import { Booking } from '../types';
+import { Booking, TripReview } from '../types';
 
 type Theme = 'light' | 'dark';
 
@@ -15,6 +14,9 @@ interface AppContextType {
   setTheme: (theme: Theme) => void;
   bookings: Booking[];
   addBooking: (booking: Booking) => void;
+  reviews: TripReview[];
+  addReview: (review: TripReview) => void;
+  deleteReview: (reviewId: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -24,33 +26,8 @@ const getInitialCurrency = (): string => {
   if (cookieCurrency && CURRENCIES.includes(cookieCurrency)) {
     return cookieCurrency;
   }
-  return 'USD';
+  return 'AED';
 };
-
-const INITIAL_BOOKINGS: Booking[] = [
-  {
-    id: 'VNS-88421',
-    tourId: 1,
-    tourTitle: 'Dubai Desert Safari: Red Dune Adventure',
-    tourSlug: 'dubai-desert-safari',
-    tourImage: 'https://images.unsplash.com/photo-1518684079-3c830dcef090?q=80&w=2787&auto=format&fit=crop',
-    date: 'Dec 12, 2024',
-    status: 'upcoming',
-    price: 75,
-    currency: 'USD'
-  },
-  {
-    id: 'VNS-77210',
-    tourId: 12,
-    tourTitle: 'Iceland Northern Lights Expedition',
-    tourSlug: 'iceland-northern-lights-expedition',
-    tourImage: 'https://images.unsplash.com/photo-1476610182048-b716b8518aae?q=80&w=2070&auto=format&fit=crop',
-    date: 'Oct 15, 2023',
-    status: 'completed',
-    price: 950,
-    currency: 'USD'
-  }
-];
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [lang, setLangState] = useState<string>(() => {
@@ -67,41 +44,45 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return 'dark';
   });
 
+  // Only persist genuine user bookings created in the session — zero invented bookings
   const [bookings, setBookings] = useState<Booking[]>(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('vanhsya-bookings');
-      return saved ? JSON.parse(saved) : INITIAL_BOOKINGS;
+      try {
+        const saved = localStorage.getItem('vanhsya-user-bookings');
+        return saved ? JSON.parse(saved) : [];
+      } catch {
+        return [];
+      }
     }
-    return INITIAL_BOOKINGS;
+    return [];
   });
 
-  // Sync theme to DOM and LocalStorage
+  // Only persist genuine user-submitted reviews — zero invented testimonials
+  const [reviews, setReviews] = useState<TripReview[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('vanhsya-user-reviews');
+        return saved ? JSON.parse(saved) : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
+
   useEffect(() => {
     const root = window.document.documentElement;
     root.setAttribute('data-theme', theme);
     localStorage.setItem('vanhsya-theme', theme);
   }, [theme]);
 
-  // Sync bookings to LocalStorage
   useEffect(() => {
-    localStorage.setItem('vanhsya-bookings', JSON.stringify(bookings));
+    localStorage.setItem('vanhsya-user-bookings', JSON.stringify(bookings));
   }, [bookings]);
 
   useEffect(() => {
-    const cookieCurrency = getCookie('currency');
-    if (!cookieCurrency && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition((position) => {
-        const { latitude } = position.coords;
-        if (latitude > 35 && latitude < 70) {
-           setCurrency('EUR');
-        }
-      }, () => {
-        setCurrencyState(getInitialCurrency());
-      }, {
-        timeout: 5000,
-      });
-    }
-  }, []);
+    localStorage.setItem('vanhsya-user-reviews', JSON.stringify(reviews));
+  }, [reviews]);
 
   const setLang = (newLang: string) => {
     setLangState(newLang);
@@ -111,7 +92,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const setCurrency = (newCurrency: string) => {
     setCurrencyState(newCurrency);
     setCookie('currency', newCurrency);
-    // Reload is used to ensure all components recalculate prices based on the new rate
     window.location.reload();
   };
 
@@ -120,11 +100,36 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const addBooking = (booking: Booking) => {
-    setBookings(prev => [booking, ...prev]);
+    setBookings((prev) => [booking, ...prev]);
   };
-  
+
+  const addReview = (review: TripReview) => {
+    setReviews((prev) => {
+      const filtered = prev.filter((r) => r.bookingId !== review.bookingId);
+      return [review, ...filtered];
+    });
+  };
+
+  const deleteReview = (reviewId: string) => {
+    setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+  };
+
   return (
-    <AppContext.Provider value={{ lang, setLang, currency, setCurrency, theme, setTheme, bookings, addBooking }}>
+    <AppContext.Provider
+      value={{
+        lang,
+        setLang,
+        currency,
+        setCurrency,
+        theme,
+        setTheme,
+        bookings,
+        addBooking,
+        reviews,
+        addReview,
+        deleteReview,
+      }}
+    >
       {children}
     </AppContext.Provider>
   );

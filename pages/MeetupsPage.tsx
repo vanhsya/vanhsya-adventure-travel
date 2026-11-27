@@ -1,323 +1,472 @@
-
-import React, { useState, useMemo } from 'react';
-import { MEETUPS_DATA } from '../constants';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import MeetupCard from '../components/MeetupCard';
-import AnimateOnScroll from '../components/AnimateOnScroll';
+import SeoHead from '../components/SeoHead';
+import { SocialEvent, SocialEventStatus } from '../types';
+import {
+  BRAND_CONTACTS,
+  UAE_EMIRATES,
+  buildWhatsAppDirectEnquiryUrl,
+} from '../utils/utm';
 
-// --- ICONS ---
-const FindIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>;
-const JoinIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>;
-const ConnectIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.653-.125-1.274-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.653.125-1.274.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>;
-const StarIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-500 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>;
-const TrendingIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>;
-const UsersIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>;
+type PublicStatusTab = Exclude<SocialEventStatus, 'draft'>;
 
-// --- COMPONENTS ---
-
-const StepCard: React.FC<{ icon: React.ReactNode; title: string; description: string; step: number }> = ({ icon, title, description, step }) => (
-    <div className="p-8 rounded-2xl bg-gray-900/60 border border-gray-700 backdrop-blur-sm relative transition-all duration-300 hover:-translate-y-2 hover:border-purple-500/50 hover:shadow-2xl hover:shadow-purple-900/20">
-        <div className="absolute -top-6 left-8 w-12 h-12 rounded-xl bg-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-purple-600/40 transform -rotate-6">
-          {step}
-        </div>
-        <div className="pt-8">
-            <div className="flex items-center gap-3 mb-4 text-purple-400">
-                {icon}
-                <h3 className="text-xl font-bold text-white font-cinzel">{title}</h3>
-            </div>
-            <p className="text-sm text-gray-400 leading-relaxed">{description}</p>
-        </div>
-    </div>
-);
-
-const StatCard: React.FC<{ value: string; label: string; icon: React.ReactNode }> = ({ value, label, icon }) => (
-    <div className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/10">
-        <div className="p-3 bg-white/10 rounded-lg text-purple-400">
-            {icon}
-        </div>
-        <div>
-            <p className="text-2xl font-black text-white">{value}</p>
-            <p className="text-xs text-gray-400 uppercase tracking-wider">{label}</p>
-        </div>
-    </div>
-);
-
-const FilterButton: React.FC<{ label: string; active: boolean; onClick: () => void }> = ({ label, active, onClick }) => (
-    <button 
-        onClick={onClick}
-        className={`px-6 py-2 rounded-full text-sm font-bold transition-all duration-300 ${
-            active 
-            ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/40' 
-            : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
-        }`}
-    >
-        {label}
-    </button>
-);
-
-const galleryImages = [
-    'https://images.unsplash.com/photo-1523908511403-7fc7b25592f4?q=80&w=800&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?q=80&w=800&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?q=80&w=800&auto=format&fit=crop', 
-    'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=800&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1524984553335-a6e5a82647c2?q=80&w=800&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1541595801925-1ea9f323c533?q=80&w=800&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1556742518-a69c179872ab?q=80&w=800&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1528605248644-14dd04022da1?q=80&w=800&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1522881451255-f5f7c3a39f3c?q=80&w=800&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1533106418989-88406e76825a?q=80&w=800&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1530541930197-58e36e841f32?q=80&w=800&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1544434689-2158872a08f5?q=80&w=800&auto=format&fit=crop'
+const STATUS_TABS: Array<{ key: PublicStatusTab | 'all'; label: string }> = [
+  { key: 'upcoming', label: 'Upcoming' },
+  { key: 'sold_out', label: 'Sold Out' },
+  { key: 'completed', label: 'Completed' },
+  { key: 'cancelled', label: 'Cancelled' },
+  { key: 'all', label: 'All Verified' },
 ];
 
-const galleryColumns = [
-    galleryImages.slice(0, 4),
-    galleryImages.slice(4, 8),
-    galleryImages.slice(8, 12),
+const EXPERIENCE_FORMATS = [
+  {
+    vibe: 'SILENCE & RESET',
+    badgeClass: 'bg-cyan-500/15 border-cyan-400/35 text-cyan-200',
+    title: 'Coffee & Slow Morning Circles',
+    emirate: 'Dubai & Abu Dhabi',
+    description:
+      'Intimate specialty coffee tables capped at 10–14 residents so solo arrivals join warm unhurried conversation.',
+    image: '/assets/aistudio/image_22851a6e.png',
+  },
+  {
+    vibe: 'HORIZON EXPLORATION',
+    badgeClass: 'bg-purple-500/15 border-purple-400/35 text-purple-200',
+    title: 'Desert Stargazing & Wadi Trails',
+    emirate: 'Ras Al Khaimah & Al Qudra',
+    description:
+      'Sunset dune walks, lantern-lit fireside talks, and mountain sunrise hikes guided with verified Vanhsya hosts.',
+    image: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cc/Dubai_Skyline_mit_Burj_Khalifa_%2818241030269%29.jpg/1280px-Dubai_Skyline_mit_Burj_Khalifa_%2818241030269%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail',
+  },
+  {
+    vibe: 'CREATIVE IMMERSION',
+    badgeClass: 'bg-violet-500/15 border-violet-400/35 text-violet-200',
+    title: 'Gallery Nights & Supper Clubs',
+    emirate: 'Alserkal & Sharjah Art Quarter',
+    description:
+      'Shared long-table dinners and evening gallery walks designed around curiosity, culture, and zero cliques.',
+    image: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/2/26/Louvre_Abu_Dhabi_01.jpg/1280px-Louvre_Abu_Dhabi_01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail',
+  },
 ];
 
-// --- MAIN PAGE ---
+const MARQUEE_GALLERY = [
+  {
+    src: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7f/Abra_at_Dubai_Creek_%28_Old_Dubai_%29.jpg/1280px-Abra_at_Dubai_Creek_%28_Old_Dubai_%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail',
+    caption: 'Dubai Creek Heritage Abra',
+  },
+  {
+    src: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fb/Al_Fahidi_Historical_Neighborhood_01.jpg/1280px-Al_Fahidi_Historical_Neighborhood_01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail',
+    caption: 'Al Fahidi Courtyard Gatherings',
+  },
+  {
+    src: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/09/Louvre_abu_dhabi%2C_interno%2C_cortile_coperto_01.jpg/1280px-Louvre_abu_dhabi%2C_interno%2C_cortile_coperto_01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail',
+    caption: 'Museum & Architecture Circles',
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?q=80&w=1200',
+    caption: 'Coastal Perspectives',
+  },
+  {
+    src: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/1/17/Mountain_view%2C_Jebel_Jais_Ras_al_Khaimah%2C_UAE.jpg/1280px-Mountain_view%2C_Jebel_Jais_Ras_al_Khaimah%2C_UAE.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail',
+    caption: 'Jebel Jais High-Altitude Trails',
+  },
+  {
+    src: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0c/KhorFakkan.jpg/1280px-KhorFakkan.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail',
+    caption: 'Khor Fakkan Coastline',
+  },
+];
 
 const MeetupsPage: React.FC = () => {
-  const [activeCategory, setActiveCategory] = useState('All');
-  const categories = ['All', 'Food & Drink', 'Adventure', 'Culture', 'Wellness'];
+  const [events, setEvents] = useState<SocialEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<PublicStatusTab | 'all'>('upcoming');
+  const [emirateFilter, setEmirateFilter] = useState<string>('All');
+  const [heroVideoMuted, setHeroVideoMuted] = useState(true);
+  const [showcasePaused, setShowcasePaused] = useState(false);
 
-  const filteredMeetups = useMemo(() => {
-    if (activeCategory === 'All') return MEETUPS_DATA;
-    // Simple keyword matching for demo purposes since data is small
-    return MEETUPS_DATA.filter(meetup => {
-        const text = (meetup.title + meetup.description).toLowerCase();
-        if (activeCategory === 'Food & Drink') return text.includes('food') || text.includes('picnic') || text.includes('market');
-        if (activeCategory === 'Adventure') return text.includes('aurora') || text.includes('hunt') || text.includes('hiking');
-        if (activeCategory === 'Culture') return text.includes('history') || text.includes('tour') || text.includes('picnic');
-        if (activeCategory === 'Wellness') return text.includes('meditation') || text.includes('yoga') || text.includes('relax');
-        return true;
+  const heroVideoRef = useRef<HTMLVideoElement | null>(null);
+  const showcaseVideoRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/events')
+      .then((res) => res.json())
+      .then((data) => {
+        if (active && Array.isArray(data.events)) {
+          setEvents(data.events);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      upcoming: 0,
+      sold_out: 0,
+      completed: 0,
+      cancelled: 0,
+      all: events.length,
+    };
+    for (const ev of events) {
+      if (counts[ev.status] !== undefined) counts[ev.status] += 1;
+    }
+    return counts;
+  }, [events]);
+
+  const filteredEvents = useMemo(() => {
+    return events.filter((ev) => {
+      const matchStatus = statusFilter === 'all' ? true : ev.status === statusFilter;
+      const matchEmirate = emirateFilter === 'All' ? true : ev.emirate === emirateFilter;
+      return matchStatus && matchEmirate;
     });
-  }, [activeCategory]);
+  }, [events, statusFilter, emirateFilter]);
+
+  const toggleHeroAudio = () => {
+    if (!heroVideoRef.current) return;
+    heroVideoRef.current.muted = !heroVideoMuted;
+    setHeroVideoMuted(!heroVideoMuted);
+  };
+
+  const toggleShowcasePlayback = () => {
+    if (!showcaseVideoRef.current) return;
+    if (showcaseVideoRef.current.paused) {
+      showcaseVideoRef.current.play().catch(() => {});
+      setShowcasePaused(false);
+    } else {
+      showcaseVideoRef.current.pause();
+      setShowcasePaused(true);
+    }
+  };
 
   return (
-    <div className="pt-24 bg-[#0A0A10] min-h-screen text-white overflow-hidden">
-      
-      {/* Hero Section */}
-      <section className="relative h-[80vh] flex items-center justify-center overflow-hidden">
-         <div className="absolute inset-0 z-0">
-             <video
-                src="https://videos.pexels.com/video-files/3195650/3195650-uhd_2560_1440_25fps.mp4"
-                autoPlay
-                muted
-                loop
-                playsInline
-                className="w-full h-full object-cover opacity-40 scale-105"
-            ></video>
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A10] via-[#0A0A10]/60 to-transparent"></div>
-         </div>
-        
-        <div className="relative z-10 text-center px-4 max-w-5xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 mb-8 animate-fadeIn">
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                <span className="text-xs font-bold uppercase tracking-widest text-green-300">Live Community Hub</span>
+    <div className="pt-20 pb-20 bg-[#07050C] min-h-screen text-white">
+      <SeoHead
+        title="Stranger MeetUps UAE — Vanhsya Social Club"
+        description="Come alone. Explore together. Watch our Stranger MeetUps story and browse administrator-verified 18+ gatherings across Dubai, Abu Dhabi, and the UAE."
+        path="/meetups"
+      />
+
+      {/* Restored Cinematic Video Hero + Scrolling Vertical Marquee */}
+      <section className="relative overflow-hidden border-b border-white/10">
+        <video
+          ref={heroVideoRef}
+          autoPlay
+          loop
+          muted={heroVideoMuted}
+          playsInline
+          poster="https://thumb.wikimedia.org/wikipedia/commons/thumb/6/61/Dubai_Creek_from_an_abra_3.jpg/1280px-Dubai_Creek_from_an_abra_3.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail"
+          className="absolute inset-0 w-full h-full object-cover opacity-35 brightness-75"
+          src="https://videos.pexels.com/video-files/3209298/3209298-uhd_2560_1440_25fps.mp4"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#07050C]/75 via-[#07050C]/70 to-[#07050C]" />
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-16 lg:py-24 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+          <div className="lg:col-span-7 space-y-6">
+            <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-purple-400/35 bg-purple-950/50 backdrop-blur-md">
+              <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
+              <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-purple-200">
+                {BRAND_CONTACTS.clubName} · {BRAND_CONTACTS.campaignTitle}
+              </span>
             </div>
-            <h1 className="text-5xl md:text-8xl font-black font-cinzel text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400 mb-6 drop-shadow-2xl">
-                Stranger Meetups™
+
+            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black font-cinzel text-white leading-[0.95] uppercase">
+              Stranger <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-300 via-white to-cyan-300">
+                MeetUps UAE
+              </span>
             </h1>
-            <p className="mt-4 max-w-2xl mx-auto text-xl text-gray-300 font-light leading-relaxed">
-                Turn solo trips into shared stories. Connect with like-minded adventurers for exclusive, intimate experiences in cities around the world.
+
+            <p className="text-lg sm:text-2xl text-purple-100/90 font-light max-w-2xl leading-relaxed">
+              {BRAND_CONTACTS.tagline} Real-world tables for UAE residents aged 18+ seeking honest human connection, shared city discovery, and zero social pressure.
             </p>
-            <div className="mt-10 flex flex-col sm:flex-row justify-center gap-4">
-                <button onClick={() => document.getElementById('browse-meetups')?.scrollIntoView({ behavior: 'smooth' })} className="px-8 py-4 bg-purple-600 text-white font-bold rounded-full shadow-lg shadow-purple-600/30 hover:bg-purple-500 transition-all transform hover:scale-105">
-                    Find Your Crew
-                </button>
-                <button className="px-8 py-4 bg-transparent border border-white/20 text-white font-bold rounded-full hover:bg-white/10 transition-all">
-                    How It Works
-                </button>
-            </div>
-        </div>
-      </section>
 
-      {/* Stats Bar */}
-      <div className="border-y border-white/10 bg-white/5 backdrop-blur-md">
-          <div className="max-w-7xl mx-auto px-4 py-8">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  <StatCard 
-                      icon={<TrendingIcon />} 
-                      value="24 Active" 
-                      label="Meetups Happening Now"
-                  />
-                  <StatCard 
-                      icon={<UsersIcon />} 
-                      value="12k+" 
-                      label="Travelers Connected"
-                  />
-                  <StatCard 
-                      icon={<StarIcon />} 
-                      value="4.9/5" 
-                      label="Community Rating"
-                  />
-              </div>
-          </div>
-      </div>
-
-      {/* How it Works Section */}
-      <section className="py-24 relative">
-        <div className="max-w-6xl mx-auto px-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-                <AnimateOnScroll>
-                    <StepCard 
-                        step={1}
-                        icon={<FindIcon />} 
-                        title="Discover" 
-                        description="Browse curated events hosted by verified locals and travelers. From rooftop drinks to hidden food walks."
-                    />
-                </AnimateOnScroll>
-                <AnimateOnScroll delay="200ms">
-                    <StepCard 
-                        step={2}
-                        icon={<JoinIcon />} 
-                        title="Reserve" 
-                        description="Secure your spot instantly. Groups are kept small (6-12 people) to ensure real connections."
-                    />
-                </AnimateOnScroll>
-                <AnimateOnScroll delay="400ms">
-                     <StepCard 
-                        step={3}
-                        icon={<ConnectIcon />} 
-                        title="Experience" 
-                        description="Show up, meet your new friends, and create memories that last longer than your trip."
-                    />
-                </AnimateOnScroll>
-            </div>
-        </div>
-      </section>
-
-       {/* Browse Meetups Section */}
-      <section id="browse-meetups" className="py-24 bg-gradient-to-b from-[#0F0F16] to-[#0A0A10]">
-        <div className="max-w-7xl mx-auto px-4">
-          <AnimateOnScroll>
-            <div className="flex flex-col md:flex-row justify-between items-end mb-12">
-                <div>
-                    <h2 className="text-4xl md:text-5xl font-bold font-cinzel text-white mb-4">Upcoming Adventures</h2>
-                    <p className="text-gray-400">Join a verified meetup happening in the next 30 days.</p>
-                </div>
-                <div className="flex flex-wrap gap-2 mt-6 md:mt-0">
-                    {categories.map(cat => (
-                        <FilterButton 
-                            key={cat} 
-                            label={cat} 
-                            active={activeCategory === cat} 
-                            onClick={() => setActiveCategory(cat)} 
-                        />
-                    ))}
-                </div>
-            </div>
-          </AnimateOnScroll>
-
-          {filteredMeetups.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                {filteredMeetups.map((meetup, index) => (
-                  <AnimateOnScroll key={meetup.id} delay={`${index * 100}ms`}>
-                    <MeetupCard meetup={meetup} />
-                  </AnimateOnScroll>
-                ))}
-              </div>
-          ) : (
-              <div className="text-center py-20 border border-dashed border-gray-700 rounded-2xl">
-                  <p className="text-gray-500 text-xl">No meetups found in this category yet.</p>
-                  <button onClick={() => setActiveCategory('All')} className="mt-4 text-purple-400 hover:text-purple-300 underline">View all meetups</button>
-              </div>
-          )}
-        </div>
-      </section>
-
-      {/* Host Spotlight */}
-      <section className="py-24 bg-[#0A0A10] relative overflow-hidden">
-          <div className="absolute inset-0 bg-purple-900/5 clip-path-slant"></div>
-          <div className="max-w-6xl mx-auto px-4 relative z-10">
-              <div className="bg-gray-900 border border-gray-800 rounded-3xl p-8 md:p-12 flex flex-col md:flex-row items-center gap-12 shadow-2xl">
-                  <div className="w-full md:w-1/3">
-                      <div className="relative aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-500">
-                          <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=800&auto=format&fit=crop" alt="Yuki Host" className="w-full h-full object-cover" />
-                          <div className="absolute bottom-4 left-4 bg-white text-black px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Superhost</div>
-                      </div>
-                  </div>
-                  <div className="w-full md:w-2/3">
-                      <div className="flex items-center gap-2 text-purple-400 font-bold mb-4">
-                          <StarIcon /> <span className="uppercase tracking-widest text-xs">Host of the Month</span>
-                      </div>
-                      <h2 className="text-4xl font-cinzel font-bold text-white mb-6">Meet Yuki from Tokyo</h2>
-                      <p className="text-gray-300 text-lg leading-relaxed mb-8">
-                          "I started hosting food crawls to show travelers the Tokyo that guidebooks miss. The tiny 5-seat ramen bars, the jazz kissatens, and the standing sushi spots. My favorite part is seeing strangers bond over a bowl of hot broth. It's magic."
-                      </p>
-                      <div className="grid grid-cols-3 gap-6 mb-10">
-                          <div>
-                              <p className="text-3xl font-black text-white">142</p>
-                              <p className="text-xs text-gray-500 uppercase">Meetups Hosted</p>
-                          </div>
-                          <div>
-                              <p className="text-3xl font-black text-white">4.98</p>
-                              <p className="text-xs text-gray-500 uppercase">Rating</p>
-                          </div>
-                          <div>
-                              <p className="text-3xl font-black text-white">1200+</p>
-                              <p className="text-xs text-gray-500 uppercase">Guests</p>
-                          </div>
-                      </div>
-                      <button className="px-8 py-3 border border-white/30 text-white font-bold rounded-lg hover:bg-white hover:text-black transition-colors">
-                          View Yuki's Upcoming Meetups
-                      </button>
-                  </div>
-              </div>
-          </div>
-      </section>
-
-      {/* Gallery Section */}
-      <section className="py-24 bg-[#0F0F16]">
-        <div className="max-w-7xl mx-auto px-4">
-            <AnimateOnScroll>
-                <div className="text-center mb-16">
-                    <h2 className="text-4xl font-bold font-cinzel text-white">Captured Moments</h2>
-                    <p className="mt-4 text-gray-400">Real stories from the Vanhsya community.</p>
-                </div>
-                <div className="relative h-[600px] overflow-hidden [mask-image:linear-gradient(to_bottom,transparent,black_10%,black_90%,transparent)]">
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 flex w-full max-w-6xl justify-center gap-6 h-max">
-                        {galleryColumns.map((column, colIndex) => (
-                            <div 
-                                key={colIndex} 
-                                className="flex flex-col gap-6 w-1/3"
-                                style={{
-                                    animation: `scroll-up ${colIndex === 1 ? '45s' : colIndex === 2 ? '35s' : '40s'} linear infinite`,
-                                } as React.CSSProperties}
-                            >
-                                {[...column, ...column].map((src, imgIndex) => (
-                                     <div key={imgIndex} className="relative group overflow-hidden rounded-xl">
-                                        <img className="h-auto w-full object-cover transition-transform duration-700 group-hover:scale-110" src={src} alt={`Gallery ${imgIndex}`} loading="lazy" />
-                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                            <span className="text-white font-cinzel text-lg">Vanhsya Vibes</span>
-                                        </div>
-                                     </div>
-                                ))}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </AnimateOnScroll>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-32 bg-black relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20"></div>
-        <AnimateOnScroll>
-            <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
-              <h2 className="text-5xl font-black text-white font-cinzel mb-8">Lead The Adventure</h2>
-              <p className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto">
-                  Love your city? Passionate about connecting people? Become a host and earn crypto rewards while sharing your world.
-              </p>
-              <button className="px-10 py-5 bg-white text-black font-black uppercase tracking-widest text-sm rounded-full shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:bg-purple-50 transition-colors transform hover:-translate-y-1">
-                Apply to Host
+            <div className="flex flex-wrap gap-3 pt-2">
+              <Link
+                to="/social-club"
+                className="px-6 py-3.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs sm:text-sm font-bold uppercase tracking-wider shadow-xl transition-colors"
+              >
+                Get Founding Member ID
+              </Link>
+              <a
+                href={buildWhatsAppDirectEnquiryUrl(
+                  'Hello Vanhsya! I would like to enquire about upcoming Stranger MeetUps or private bookings.'
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-6 py-3.5 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/70 border border-emerald-400/40 text-emerald-200 text-xs sm:text-sm font-semibold transition-colors"
+              >
+                WhatsApp Enquiries ({BRAND_CONTACTS.whatsappDisplay})
+              </a>
+              <button
+                type="button"
+                onClick={toggleHeroAudio}
+                className="px-4 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-mono text-gray-200"
+              >
+                {heroVideoMuted ? '🔇 Unmute Ambient Film' : '🔊 Mute Film'}
               </button>
             </div>
-        </AnimateOnScroll>
+          </div>
+
+          {/* Restored Scrolling Vertical Photography Gallery (uses @keyframes scroll-up in index.html) */}
+          <div className="lg:col-span-5">
+            <div className="grid grid-cols-2 gap-4 h-[360px] sm:h-[420px] overflow-hidden rounded-3xl border border-white/10 bg-black/50 p-3 backdrop-blur-md relative">
+              <div className="space-y-4 animate-[scroll-up_26s_linear_infinite]">
+                {[...MARQUEE_GALLERY, ...MARQUEE_GALLERY].map((item, idx) => (
+                  <div key={`col1-${idx}`} className="relative rounded-2xl overflow-hidden h-44 border border-white/10">
+                    <img
+                      src={item.src}
+                      alt={item.caption}
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute inset-x-0 bottom-0 p-2.5 bg-gradient-to-t from-black/90 to-transparent">
+                      <p className="text-[11px] font-semibold text-white">{item.caption}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="space-y-4 animate-[scroll-up_34s_linear_infinite_reverse] hidden sm:block">
+                {[...MARQUEE_GALLERY.slice().reverse(), ...MARQUEE_GALLERY.slice().reverse()].map((item, idx) => (
+                  <div key={`col2-${idx}`} className="relative rounded-2xl overflow-hidden h-44 border border-white/10">
+                    <img
+                      src={item.src}
+                      alt={item.caption}
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute inset-x-0 bottom-0 p-2.5 bg-gradient-to-t from-black/90 to-transparent">
+                      <p className="text-[11px] font-semibold text-white">{item.caption}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-[#07050C] to-transparent" />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-[#07050C] to-transparent" />
+            </div>
+          </div>
+        </div>
       </section>
 
+      {/* Administrator-Verified Live Events Schedule (Separated Strictly from Concept Showcase) */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-14 border-b border-white/10">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+          <div>
+            <p className="text-xs font-mono font-bold uppercase tracking-[0.24em] text-purple-300">
+              LIVE VERIFIED CALENDAR
+            </p>
+            <h2 className="text-3xl sm:text-4xl font-cinzel font-black text-white mt-1">
+              Upcoming &amp; Archived Gatherings
+            </h2>
+            <p className="text-xs sm:text-sm text-gray-400 mt-1">
+              Only administrator-verified events appear below. Drafts and unconfirmed dates are never published.
+            </p>
+          </div>
+
+          {/* Emirate Filter */}
+          <div className="flex items-center gap-2 shrink-0">
+            <label htmlFor="meetup-emirate-filter" className="text-xs text-gray-400">
+              Emirate:
+            </label>
+            <select
+              id="meetup-emirate-filter"
+              value={emirateFilter}
+              onChange={(e) => setEmirateFilter(e.target.value)}
+              className="px-3.5 py-2 rounded-xl bg-[#120D1D] border border-white/15 text-xs text-white focus:outline-none focus:border-purple-400"
+            >
+              <option value="All">All UAE Emirates</option>
+              {UAE_EMIRATES.map((em) => (
+                <option key={em} value={em}>
+                  {em}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Separated Status Tabs */}
+        <div className="flex flex-wrap gap-2 mb-8">
+          {STATUS_TABS.map((tab) => {
+            const active = statusFilter === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setStatusFilter(tab.key)}
+                className={`px-4 py-2 rounded-xl text-xs font-semibold border transition-colors ${
+                  active
+                    ? 'bg-purple-600 border-purple-400 text-white'
+                    : 'bg-[#120D1D] border-white/10 text-gray-300 hover:border-purple-400/50'
+                }`}
+              >
+                {tab.label} ({statusCounts[tab.key] || 0})
+              </button>
+            );
+          })}
+        </div>
+
+        {loading ? (
+          <div className="py-16 text-center text-sm text-gray-400">
+            Loading verified Vanhsya Social Club events...
+          </div>
+        ) : filteredEvents.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredEvents.map((event) => (
+              <MeetupCard key={event.id} event={event} />
+            ))}
+          </div>
+        ) : (
+          <div className="p-10 rounded-3xl border border-dashed border-purple-500/35 bg-[#120D1D] text-center space-y-4">
+            <h3 className="text-xl font-cinzel font-bold text-white">
+              No {statusFilter === 'all' ? 'verified' : statusFilter.replace('_', ' ')} events currently listed
+            </h3>
+            <p className="text-sm text-gray-400 max-w-lg mx-auto">
+              We strictly publish events only after venue, host, and capacity verification—never fabricated attendance or unconfirmed placeholder dates. Join the Founding Member list or reach us on WhatsApp ({BRAND_CONTACTS.whatsappDisplay}) to reserve for the next drop.
+            </p>
+            <div className="pt-2 flex flex-wrap justify-center gap-3">
+              {statusFilter !== 'all' && (
+                <button
+                  onClick={() => {
+                    setStatusFilter('all');
+                    setEmirateFilter('All');
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-white/10 text-xs font-semibold text-white hover:bg-white/20"
+                >
+                  Show All Statuses
+                </button>
+              )}
+              <Link
+                to="/social-club"
+                className="px-5 py-2.5 rounded-xl bg-purple-600 text-xs font-bold text-white hover:bg-purple-500"
+              >
+                Register for Meetup Alerts
+              </Link>
+              <Link
+                to="/partners/apply"
+                className="px-5 py-2.5 rounded-xl border border-white/20 bg-white/5 text-xs font-semibold text-gray-200 hover:bg-white/10"
+              >
+                Apply to Host a Gathering
+              </Link>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* Concept Formats Archive / Original Meetups Experience Archetypes (Clearly Separated from Live Verified Schedule) */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-16 border-b border-white/10">
+        <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <span className="text-xs font-mono font-bold uppercase tracking-[0.26em] text-cyan-400">
+              CURATED EXPERIENCE FORMATS
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-cinzel font-black text-white mt-2">
+              How Our Stranger MeetUps Work
+            </h2>
+            <p className="text-xs sm:text-sm text-gray-400 mt-1 max-w-2xl">
+              Concept formats showcasing the atmosphere of Vanhsya circles. These are format previews—not scheduled dates or active bookings.
+            </p>
+          </div>
+          <Link to="/partners/apply" className="text-xs font-semibold text-purple-300 hover:text-white">
+            Propose a Venue or Host Format &rarr;
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {EXPERIENCE_FORMATS.map((fmt) => (
+            <div
+              key={fmt.title}
+              className="group rounded-3xl overflow-hidden border border-white/10 bg-[#120D1D] flex flex-col shadow-xl"
+            >
+              <div className="relative h-56 overflow-hidden">
+                <img
+                  src={fmt.image}
+                  alt={fmt.title}
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#120D1D] via-transparent to-black/40" />
+                <span className={`absolute top-4 left-4 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${fmt.badgeClass}`}>
+                  {fmt.vibe}
+                </span>
+              </div>
+              <div className="p-6 flex-1 flex flex-col">
+                <p className="text-xs text-purple-300 font-semibold">{fmt.emirate} · Concept Format</p>
+                <h3 className="text-xl font-cinzel font-bold text-white mt-1.5">{fmt.title}</h3>
+                <p className="text-sm text-gray-400 mt-2.5 leading-relaxed flex-1">{fmt.description}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Restored Host & Storytelling Video Section + Official Channels */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-16">
+        <div className="p-8 sm:p-12 rounded-3xl bg-[#120D1D] border border-purple-500/25 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+          <div className="lg:col-span-6 space-y-5">
+            <span className="text-xs font-mono font-bold uppercase tracking-[0.28em] text-cyan-400">
+              HOST &amp; COMMUNITY STORIES
+            </span>
+            <h2 className="text-3xl sm:text-5xl font-cinzel font-black text-white leading-tight">
+              Host a Curated UAE Gathering
+            </h2>
+            <p className="text-sm sm:text-base text-gray-300 leading-relaxed">
+              Venues, coffee roasters, wellness studios, and thoughtful community hosts across the UAE can partner with Vanhsya Social Club to welcome 18+ Founding Members safely.
+            </p>
+            <div className="flex flex-wrap gap-3 pt-1">
+              <Link
+                to="/partners/apply"
+                className="px-6 py-3 rounded-xl bg-white text-black font-bold text-xs uppercase tracking-wider hover:bg-cyan-300 transition-colors"
+              >
+                Partner / Host Application
+              </Link>
+              <a
+                href={BRAND_CONTACTS.instagramUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-6 py-3 rounded-xl bg-white/5 border border-white/15 text-white hover:bg-white/10 text-xs font-semibold"
+              >
+                Follow {BRAND_CONTACTS.instagramHandle}
+              </a>
+            </div>
+          </div>
+
+          <div className="lg:col-span-6">
+            <div className="relative aspect-video rounded-2xl overflow-hidden border border-white/15 bg-black shadow-2xl">
+              <video
+                ref={showcaseVideoRef}
+                autoPlay
+                loop
+                muted
+                playsInline
+                poster="https://thumb.wikimedia.org/wikipedia/commons/thumb/5/50/Al_Fahidi_Historical_Neighborhood_02.jpg/1280px-Al_Fahidi_Historical_Neighborhood_02.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail"
+                className="w-full h-full object-cover brightness-75"
+                src="https://videos.pexels.com/video-files/3195650/3195650-uhd_2560_1440_25fps.mp4"
+              />
+              <button
+                type="button"
+                onClick={toggleShowcasePlayback}
+                aria-label={showcasePaused ? 'Play showcase video' : 'Pause showcase video'}
+                className="absolute bottom-4 right-4 px-3.5 py-2 rounded-xl bg-black/75 hover:bg-black border border-white/20 text-xs font-mono text-white backdrop-blur-md"
+              >
+                {showcasePaused ? '▶ Play Film' : '❚❚ Pause Film'}
+              </button>
+              <div className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1 rounded-full bg-black/70 border border-white/15 text-[10px] font-mono text-purple-200">
+                <img
+                  src={BRAND_CONTACTS.instagramQrPath}
+                  alt="Instagram QR"
+                  className="w-5 h-5 rounded object-cover"
+                />
+                <span>{BRAND_CONTACTS.instagramHandle} · {BRAND_CONTACTS.websiteDisplay}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 };

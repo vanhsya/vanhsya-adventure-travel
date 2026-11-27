@@ -1,5 +1,5 @@
 
-import { Tour, Meetup, Blog } from './types';
+import type { Tour, Blog } from './types.ts';
 
 export const LANGS = ['en', 'es', 'hi', 'ar'];
 export const CURRENCIES = [
@@ -29,15 +29,15 @@ export const CURRENCY_RATES_FROM_USD: { [key: string]: number } = {
 };
 
 export const NAV_LINKS = [
+  { href: '/book', label: 'Book Travel' },
+  { href: '/ventures', label: 'Ventures & Life' },
+  { href: '/treasure-hunt', label: 'The Blueprint' },
+  { href: '/meetups', label: 'MeetUps' },
+  { href: '/social-club', label: 'Social Club' },
   { href: '/ai-planner', label: 'AI Planner' },
   { href: '/vr-experience', label: 'VR Experience' },
-  { href: '/treasure-hunt', label: 'The Blueprint' },
-  { href: '/blogs', label: 'Blogs' },
-  { href: '/meetups', label: 'MeetUps' },
+  { href: '/vyno', label: 'Web3' },
   { href: '/community', label: 'Community' },
-  { href: '/partners/apply', label: 'B2B Partners' },
-  { href: '/refer-and-earn', label: 'Refer & Earn' },
-  { href: '/daily-rewards', label: 'Daily Rewards' },
   { href: '/dashboard', label: 'Dashboard' },
 ];
 
@@ -88,7 +88,7 @@ Tokyo is a paradise for food lovers, but the real magic lies beyond the Michelin
 ### Tsukiji Outer Market: A Feast for the Senses
 Our adventure started at Tsukiji Outer Market. The energy was electric. We sampled everything from fresh-off-the-grill scallops to sweet, fluffy tamagoyaki (rolled omelet). It was a breakfast like no other.
 
-![Tsukiji Market Stall](https://images.unsplash.com/photo-1535568396590-50d3d523eb4f?q=80&w=800&auto=format&fit=crop)
+![Tsukiji Market Stall](https://images.unsplash.com/photo-1503899036084-c55cdd92da26?q=80&w=2070&auto=format&fit=crop)
 
 ### Shinjuku's Memory Lane
 As evening fell, we navigated the narrow, lantern-lit alleys of Omoide Yokocho (Memory Lane) in Shinjuku. The air was thick with the delicious smoke of yakitori grills. We squeezed into a tiny eatery, shoulder-to-shoulder with locals, and enjoyed skewers of perfectly grilled chicken, washed down with cold beer. This was the authentic Tokyo experience I had craved.
@@ -125,81 +125,6 @@ No trip to Rome is complete without visiting the Vatican. St. Peter's Basilica w
   }
 ];
 
-export const MEETUPS_DATA: Meetup[] = [
-  {
-    id: 1,
-    title: 'Tokyo Night Market Food Crawl',
-    slug: 'tokyo-food-crawl',
-    tourSlug: 'tokyo-foodie-adventure',
-    city: 'Tokyo',
-    country: 'Japan',
-    date: 'November 12, 2024',
-    time: '6:30 PM',
-    imageUrl: 'https://images.unsplash.com/photo-1569091791842-7cf9646cb126?q=80&w=1974&auto=format&fit=crop',
-    host: {
-      name: 'Yuki',
-      avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=256&auto=format&fit=crop',
-    },
-    attendees: 5,
-    capacity: 8,
-    description: 'Join local foodie Yuki on a delicious journey through Shinjuku\'s hidden food alleys. Let\'s sample the best takoyaki, yakitori, and ramen the city has to offer!',
-  },
-  {
-    id: 2,
-    title: 'Eiffel Tower Sunset Picnic',
-    slug: 'paris-sunset-picnic',
-    tourSlug: 'paris-eiffel-tower-tour',
-    city: 'Paris',
-    country: 'France',
-    date: 'November 18, 2024',
-    time: '5:00 PM',
-    imageUrl: 'https://images.unsplash.com/photo-1565099824688-e93eb20fe622?q=80&w=2070&auto=format&fit=crop',
-    host: {
-      name: 'Amélie',
-      avatarUrl: 'https://images.unsplash.com/photo-1509967419530-da38b4704bc6?q=80&w=256&auto=format&fit=crop',
-    },
-    attendees: 8,
-    capacity: 12,
-    description: 'Let\'s gather at Champ de Mars for a classic Parisian experience. Bring your favorite cheese or wine, and let\'s watch the Eiffel Tower light up as the sun sets.',
-  },
-  {
-    id: 3,
-    title: 'Aurora Hunting & Bonfire',
-    slug: 'iceland-aurora-bonfire',
-    tourSlug: 'iceland-northern-lights-expedition',
-    city: 'Reykjavik',
-    country: 'Iceland',
-    date: 'November 25, 2024',
-    time: '9:00 PM',
-    imageUrl: 'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?q=80&w=2070&auto=format&fit=crop',
-    host: {
-      name: 'Bjorn',
-      avatarUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=256&auto=format&fit=crop',
-    },
-    attendees: 3,
-    capacity: 10,
-    description: 'Driving out of the city to find the best spot for Northern Lights. I\'ll bring the hot chocolate and a bonfire to keep us warm while we wait for the sky to dance.',
-  },
-  {
-    id: 4,
-    title: 'Sunrise Desert Meditation',
-    slug: 'dubai-sunrise-meditation',
-    tourSlug: 'dubai-desert-safari',
-    city: 'Dubai',
-    country: 'UAE',
-    date: 'December 2, 2024',
-    time: '5:30 AM',
-    imageUrl: 'https://images.unsplash.com/photo-1547234935-80c7142ee552?q=80&w=2070&auto=format&fit=crop',
-    host: {
-      name: 'Khalid',
-      avatarUrl: 'https://images.unsplash.com/photo-1590086782792-42dd2350150d?q=80&w=256&auto=format&fit=crop',
-    },
-    attendees: 6,
-    capacity: 10,
-    description: 'Experience the serene magic of the Arabian desert at dawn. We\'ll find a quiet spot for a guided meditation session as the sun rises over the dunes.',
-  },
-];
-
 
 export const TOURS_DATA: Tour[] = [
   {
@@ -213,11 +138,10 @@ export const TOURS_DATA: Tour[] = [
     longitude: 55.2708,
     basePriceUSD: 75,
     images: [
-        'https://images.unsplash.com/photo-1518684079-3c830dcef090?q=80&w=2787&auto=format&fit=crop', // Stunning night/dusk desert shot
-        'https://images.unsplash.com/photo-1547234935-80c7142ee552?q=80&w=2070&auto=format&fit=crop', // Camel at sunrise
-        'https://images.unsplash.com/photo-1451337516015-6b6fcd1c56ab?q=80&w=2070&auto=format&fit=crop', // Dune aerial
-        'https://images.unsplash.com/photo-1516633630673-67bbad74498a?q=80&w=2070&auto=format&fit=crop', // 4x4 Action
-        'https://images.unsplash.com/photo-1623861214878-438914b1c8c5?q=80&w=2070&auto=format&fit=crop'  // Camp fire
+        '/assets/aistudio/image_b4bb5481.png',
+        'https://images.unsplash.com/photo-1518684079-3c830dcef090?q=80&w=2787&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1512632578888-169bbbc64f33?q=80&w=2070&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1546412414-e1885259563a?q=80&w=2070&auto=format&fit=crop'
     ],
     durationHours: 6,
     groupDiscountPercent: 10,
@@ -247,10 +171,10 @@ export const TOURS_DATA: Tour[] = [
     longitude: 55.2446,
     basePriceUSD: 85,
     images: [
-      'https://images.unsplash.com/photo-1579607629642-1e5cb75fb028?q=80&w=2070&auto=format&fit=crop', // Miracle Garden
-      'https://images.unsplash.com/photo-1588667822943-3e1104e125f3?q=80&w=2070&auto=format&fit=crop', // Global Village / Lights
-      'https://images.unsplash.com/photo-1610967012353-855c5df39276?q=80&w=2071&auto=format&fit=crop', // Flowers
-      'https://images.unsplash.com/photo-1518182170546-07fb6ceeb933?q=80&w=2070&auto=format&fit=crop'  // Festive lights
+      'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/04/Dubai_Miracle_Garden_-_%E0%B4%A6%E0%B5%81%E0%B4%AC%E0%B4%BE%E0%B4%AF%E0%B5%8D_%E0%B4%AE%E0%B4%BF%E0%B4%B1%E0%B4%BE%E0%B4%95%E0%B5%8D%E0%B4%95%E0%B4%BF%E0%B5%BE_%E0%B4%97%E0%B4%BE%E0%B5%BC%E0%B4%A1%E0%B5%BB_04.jpg/1280px-Dubai_Miracle_Garden_-_%E0%B4%A6%E0%B5%81%E0%B4%AC%E0%B4%BE%E0%B4%AF%E0%B5%8D_%E0%B4%AE%E0%B4%BF%E0%B4%B1%E0%B4%BE%E0%B4%95%E0%B5%8D%E0%B4%95%E0%B4%BF%E0%B5%BE_%E0%B4%97%E0%B4%BE%E0%B5%BC%E0%B4%A1%E0%B5%BB_04.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail',
+      'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b6/VAE-dubai-miracle-03.jpg/1280px-VAE-dubai-miracle-03.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail',
+      'https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5e/Global_Village_Dubai_entrance.jpg/1280px-Global_Village_Dubai_entrance.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail',
+      'https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cb/Inside_the_Global_Village_in_Dubai_February_2019.jpg/1280px-Inside_the_Global_Village_in_Dubai_February_2019.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail'
     ],
     durationHours: 8,
     groupDiscountPercent: 15,
@@ -275,9 +199,9 @@ export const TOURS_DATA: Tour[] = [
     longitude: 55.1171,
     basePriceUSD: 95,
     images: [
-      'https://images.unsplash.com/photo-1577977490687-6e691244e89f?q=80&w=2070&auto=format&fit=crop', // Waterpark generic
-      'https://images.unsplash.com/photo-1582653770381-0814d48518e3?q=80&w=2070&auto=format&fit=crop', // Atlantis View
-      'https://images.unsplash.com/photo-1506059287752-6762580556c0?q=80&w=2070&auto=format&fit=crop', // Splash
+      'https://images.unsplash.com/photo-1540541338287-41700207dee6?q=80&w=2070&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=2070&auto=format&fit=crop',
+      'https://thumb.wikimedia.org/wikipedia/commons/thumb/8/86/Atlantis%2C_The_Palm_from_Le_Royal_M%C3%A9ridien_Beach_Resort_and_Spa_in_Dubai_2.jpg/1280px-Atlantis%2C_The_Palm_from_Le_Royal_M%C3%A9ridien_Beach_Resort_and_Spa_in_Dubai_2.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail'
     ],
     durationHours: 9,
     groupDiscountPercent: 5,
@@ -302,10 +226,9 @@ export const TOURS_DATA: Tour[] = [
     longitude: 54.3773,
     basePriceUSD: 105,
     images: [
-      'https://images.unsplash.com/photo-1572522204225-247f072d655d?q=80&w=2021&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1610496162394-1b12b7f8c6b7?q=80&w=2070&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1631853664971-99b5065a7a102?q=80&w=2070&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1542139366-1169a53315a1?q=80&w=1974&auto=format&fit=crop'
+      'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2070&auto=format&fit=crop',
+      'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/06/Gradens_Sheikh_Zayed_Grand_Mosque_in_Abu_Dhabi_-_panoramio.jpg/1280px-Gradens_Sheikh_Zayed_Grand_Mosque_in_Abu_Dhabi_-_panoramio.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail',
+      'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?q=80&w=2070&auto=format&fit=crop'
     ],
     durationHours: 9,
     groupDiscountPercent: 10,
@@ -330,10 +253,9 @@ export const TOURS_DATA: Tour[] = [
       longitude: 56.1436,
       basePriceUSD: 165,
       images: [
-        'https://images.unsplash.com/photo-1632348324422-0692717900b7?q=80&w=2071&auto=format&fit=crop',
-        'https://images.unsplash.com/photo-1632348324542-536f9876274a?q=80&w=2071&auto=format&fit=crop',
-        'https://images.unsplash.com/photo-1590497003009-a5b9c0a6b8a8?q=80&w=2070&auto=format&fit=crop',
-        'https://images.unsplash.com/photo-1632348324484-7a0b3f5a115b?q=80&w=2071&auto=format&fit=crop'
+        'https://images.unsplash.com/photo-1551632811-561732d1e306?q=80&w=2070&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2070&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=2070&auto=format&fit=crop'
       ],
       durationHours: 5,
       groupDiscountPercent: 10,
@@ -359,9 +281,7 @@ export const TOURS_DATA: Tour[] = [
       longitude: 55.4033,
       basePriceUSD: 65,
       images: [
-        'https://images.unsplash.com/photo-1597652726353-27aa34c89286?q=80&w=2070&auto=format&fit=crop', // Sharjah Light Festival / Mosque
-        'https://images.unsplash.com/photo-1580665985799-7339d675667c?q=80&w=2070&auto=format&fit=crop', // Mosque interior
-        'https://images.unsplash.com/photo-1512453979798-5ea9ba6a80f6?q=80&w=1974&auto=format&fit=crop'  // Souk/Architecture
+        'https://images.unsplash.com/photo-1526495124232-a04e1849168c?q=80&w=2070&auto=format&fit=crop'
       ],
       durationHours: 5,
       groupDiscountPercent: 10,
@@ -386,9 +306,9 @@ export const TOURS_DATA: Tour[] = [
       longitude: 56.3265,
       basePriceUSD: 110,
       images: [
-        'https://images.unsplash.com/photo-1629221812852-5a26569eb239?q=80&w=2070&auto=format&fit=crop', // Mountains/Road
-        'https://images.unsplash.com/photo-1544551763-46a013bb70d5?q=80&w=2070&auto=format&fit=crop', // Underwater/Snorkel
-        'https://images.unsplash.com/photo-1597211684694-52299b4229ad?q=80&w=2071&auto=format&fit=crop'  // Beach
+        'https://images.unsplash.com/photo-1544551763-46a013bb70d5?q=80&w=2070&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2073&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1582967788606-a171c1080cb0?q=80&w=2070&auto=format&fit=crop'
       ],
       durationHours: 10,
       groupDiscountPercent: 5,
@@ -413,9 +333,9 @@ export const TOURS_DATA: Tour[] = [
       longitude: 56.1264,
       basePriceUSD: 90,
       images: [
-        'https://images.unsplash.com/photo-1627814781757-97594584282e?q=80&w=2070&auto=format&fit=crop', // Hatta Dam
-        'https://images.unsplash.com/photo-1518091043644-c1d4457512c6?q=80&w=1978&auto=format&fit=crop', // Mountains
-        'https://images.unsplash.com/photo-1591873733076-24df99786411?q=80&w=2070&auto=format&fit=crop'  // Kayak generic
+        'https://images.unsplash.com/photo-1518091043644-c1d4457512c6?q=80&w=1978&auto=format&fit=crop',
+        'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bc/A_view_of_the_Hatta_Mountains_in_Hatta_Dam.jpg/1280px-A_view_of_the_Hatta_Mountains_in_Hatta_Dam.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail',
+        'https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5c/Hatta_Dam_-_UAE.jpg/1280px-Hatta_Dam_-_UAE.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail'
       ],
       durationHours: 7,
       groupDiscountPercent: 10,
@@ -440,10 +360,9 @@ export const TOURS_DATA: Tour[] = [
     longitude: 2.3522,
     basePriceUSD: 99,
     images: [
-        'https://images.unsplash.com/photo-1543349689-9a4d426bee8e?q=80&w=2070&auto=format&fit=crop',
         'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=2070&auto=format&fit=crop',
-        'https://images.unsplash.com/photo-1500217053530-36f73f1b3469?q=80&w=2070&auto=format&fit=crop',
-        'https://images.unsplash.com/photo-1511739001486-6bfe10ce785f?q=80&w=1974&auto=format&fit=crop'
+        'https://images.unsplash.com/photo-1511739001486-6bfe10ce785f?q=80&w=1974&auto=format&fit=crop',
+        'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b7/Paris_-_The_Eiffel_Tower_in_spring_-_2307.jpg/1280px-Paris_-_The_Eiffel_Tower_in_spring_-_2307.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail'
     ],
     durationHours: 3,
     groupDiscountPercent: 5,
@@ -475,8 +394,8 @@ export const TOURS_DATA: Tour[] = [
     images: [
       'https://images.unsplash.com/photo-1587595431973-160d0d94add1?q=80&w=2070&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1526392060635-9d6019884377?q=80&w=2070&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1558014546-978583c4e3f3?q=80&w=2070&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1620442795378-03b6d05f242e?q=80&w=2070&auto=format&fit=crop'
+      'https://thumb.wikimedia.org/wikipedia/commons/thumb/4/43/Peru_Machu_Picchu_Sunrise.jpg/1280px-Peru_Machu_Picchu_Sunrise.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail',
+      'https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9f/99_-_Machu_Picchu_-_Juin_2009.edit3.jpg/1280px-99_-_Machu_Picchu_-_Juin_2009.edit3.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail'
     ],
     durationHours: 96,
     groupDiscountPercent: 5,
@@ -503,9 +422,11 @@ export const TOURS_DATA: Tour[] = [
     basePriceUSD: 2200,
     images: [
       'https://images.unsplash.com/photo-1516426122078-c23e76319801?q=80&w=2070&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1534437431453-43b593813872?q=80&w=2070&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1580556952763-1025537034c4?q=80&w=2070&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1610366988248-d3235b67a220?q=80&w=2070&auto=format&fit=crop'
+      'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?q=80&w=2070&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1539635278303-d4002c07eae3?q=80&w=2070&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1565099824688-e93eb20fe622?q=80&w=2070&auto=format&fit=crop',
+      'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d6/Serengeti_Safari_with_Leopard.jpg/1280px-Serengeti_Safari_with_Leopard.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail',
+      'https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6a/Ngorongoro_Spitzmaulnashorn.jpg/1280px-Ngorongoro_Spitzmaulnashorn.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail'
     ],
     durationHours: 120,
     groupDiscountPercent: 10,
@@ -532,10 +453,9 @@ export const TOURS_DATA: Tour[] = [
     longitude: -21.9426,
     basePriceUSD: 950,
     images: [
-      'https://images.unsplash.com/photo-1476610182048-b716b8518aae?q=80&w=2070&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?q=80&w=2070&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1482352504333-3a1a1f82f9df?q=80&w=2070&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1563806130456-623e20e835e3?q=80&w=2070&auto=format&fit=crop'
+      'https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=2070&auto=format&fit=crop',
+      'https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2b/Aurora_borealis_over_snowy_mountains%2C_South_Iceland_%28DSC01438%29.jpg/1280px-Aurora_borealis_over_snowy_mountains%2C_South_Iceland_%28DSC01438%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail'
     ],
     durationHours: 96,
     groupDiscountPercent: 8,
@@ -568,8 +488,9 @@ export const TOURS_DATA: Tour[] = [
     images: [
       'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=2148&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1522383225653-ed111181a951?q=80&w=2148&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1554189097-f41753a4de83?q=80&w=2070&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1584277499694-b78f448404a9?q=80&w=2070&auto=format&fit=crop'
+      'https://images.unsplash.com/photo-1528164344705-47542687000d?q=80&w=2070&auto=format&fit=crop',
+      'https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8e/Fushimi_Inari-taisha%2C_Kyoto%2C_20240818_1343_4411.jpg/1280px-Fushimi_Inari-taisha%2C_Kyoto%2C_20240818_1343_4411.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail',
+      'https://thumb.wikimedia.org/wikipedia/commons/thumb/9/97/2021_Sagano_Bamboo_forest_in_Arashiyama%2C_Kyoto%2C_Japan.jpg/1280px-2021_Sagano_Bamboo_forest_in_Arashiyama%2C_Kyoto%2C_Japan.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail'
     ],
     durationHours: 72,
     groupDiscountPercent: 10,

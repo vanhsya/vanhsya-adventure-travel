@@ -27,10 +27,11 @@ const BlogCard: React.FC<BlogCardProps> = ({ blog }) => {
     >
       <Link to={`/blogs/${blog.slug}`} className="block">
         <div 
-          className="h-56 bg-cover bg-center" 
-          style={{ backgroundImage: `url(${blog.imageUrl})` }}
+          className="h-56 relative overflow-hidden" 
           aria-label={blog.title}
-        ></div>
+        >
+          <img src={blog.imageUrl} alt={blog.title} className="absolute inset-0 w-full h-full object-cover" referrerPolicy="no-referrer" />
+        </div>
       </Link>
       <div className="p-5 flex-1 flex flex-col">
         <h3 className="font-bold text-xl">
@@ -38,7 +39,7 @@ const BlogCard: React.FC<BlogCardProps> = ({ blog }) => {
         </h3>
         <p className="text-sm mt-2 line-clamp-3 flex-grow" style={{ color: 'var(--text-secondary)'}}>{blog.excerpt}</p>
         <div className="mt-5 pt-4 border-t flex items-center" style={{ borderColor: 'var(--border-color)'}}>
-          <img src={blog.authorAvatar} alt={blog.author} className="w-10 h-10 rounded-full object-cover" />
+          <img src={blog.authorAvatar} alt={blog.author} className="w-10 h-10 rounded-full object-cover" referrerPolicy="no-referrer" />
           <div className="ml-3 text-sm">
             <p className="font-semibold" style={{ color: 'var(--text-primary)'}}>{blog.author}</p>
             <p style={{ color: 'var(--text-secondary)'}}>{blog.date}</p>

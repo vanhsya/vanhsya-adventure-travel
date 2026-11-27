@@ -3,7 +3,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Tour } from '@/types';
 import { convertFromUSD } from '@/utils/currency';
-import { GoogleGenAI } from "@google/genai";
+import { useAuth } from '@/contexts/AuthContext';
 
 interface TourCardProps {
   tour: Tour;
@@ -23,6 +23,8 @@ const SparkleIcon = () => (
 );
 
 const TourCard: React.FC<TourCardProps> = ({ tour, currency }) => {
+  const { isFavorite, toggleFavorite } = useAuth();
+  const saved = isFavorite(tour.slug);
   const displayPrice = tour.displayPrice ?? convertFromUSD(tour.basePriceUSD, currency);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
@@ -68,18 +70,16 @@ const TourCard: React.FC<TourCardProps> = ({ tour, currency }) => {
     e.stopPropagation();
     setIsGeneratingAI(true);
     try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
         const prompt = `A breathtaking, cinematic, 8k professional travel photograph of ${tour.title} in ${tour.city}, ${tour.country}. High resolution, beautiful lighting, award winning composition.`;
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash-image',
-            contents: { parts: [{ text: prompt }] },
-            config: { imageConfig: { aspectRatio: "16:9" } }
+        const res = await fetch('/api/gemini/generate-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt, aspectRatio: "16:9" })
         });
-        
-        for (const part of response.candidates[0].content.parts) {
-            if (part.inlineData) {
-                setAiImageUrl(`data:image/png;base64,${part.inlineData.data}`);
-                break;
+        if (res.ok) {
+            const data = await res.json();
+            if (data.imageUrl) {
+                setAiImageUrl(data.imageUrl);
             }
         }
     } catch (err) {
@@ -151,20 +151,22 @@ const TourCard: React.FC<TourCardProps> = ({ tour, currency }) => {
         {/* AI IMAGE OVERLAY */}
         {aiImageUrl && (
             <div className="absolute inset-0 z-20 animate-fadeIn">
-                <img src={aiImageUrl} alt="AI Re-imagined" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                <img src={aiImageUrl} alt="AI Re-imagined" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" referrerPolicy="no-referrer" />
                 <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded text-[10px] text-cyan-400 font-black border border-cyan-500/30 uppercase tracking-widest">AI Generated</div>
             </div>
         )}
 
         {!aiImageUrl && tour.images.map((image, index) => (
-          <div
+          <img
             key={index}
-            className="absolute inset-0 w-full h-full bg-cover bg-center transition-all duration-700 ease-in-out transform group-hover:scale-110"
+            src={image}
+            alt={`${tour.title} image ${index + 1}`}
+            className="absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-in-out transform group-hover:scale-110"
             style={{
-              backgroundImage: `url(${image})`,
               opacity: index === currentImageIndex ? 1 : 0,
             }}
             aria-hidden={index !== currentImageIndex}
+            referrerPolicy="no-referrer"
           />
         ))}
 
@@ -197,7 +199,38 @@ const TourCard: React.FC<TourCardProps> = ({ tour, currency }) => {
             </>
         )}
 
-        {/* AI MAGIC BUTTON */}
+        {/* FAVORITE & AI MAGIC BUTTONS */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleFavorite(tour.slug, 'experience');
+          }}
+          aria-label={saved ? 'Remove from saved favorites' : 'Save to favorites'}
+          title={saved ? 'Saved to Favorites' : 'Save Experience'}
+          className={`absolute top-3 left-3 z-30 p-2 rounded-xl backdrop-blur-md border transition-all duration-300 hover:scale-110 ${
+            saved
+              ? 'bg-rose-600/80 border-rose-300 text-white shadow-[0_0_15px_rgba(244,63,94,0.5)]'
+              : 'bg-black/45 border-white/20 text-gray-200 hover:text-rose-300'
+          }`}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-4 w-4"
+            viewBox="0 0 24 24"
+            fill={saved ? 'currentColor' : 'none'}
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+            />
+          </svg>
+        </button>
+
         <button 
             onClick={handleAIMagic}
             disabled={isGeneratingAI}

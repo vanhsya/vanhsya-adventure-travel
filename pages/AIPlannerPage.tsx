@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { GoogleGenAI } from "@google/genai";
 import { useAppContext } from '../contexts/AppContext';
 
 declare global {
@@ -331,6 +330,8 @@ const Loader: React.FC = () => {
     );
 }
 
+const DEFAULT_PLANNER_BG = 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=2021&auto=format&fit=crop';
+
 const AIPlannerPage: React.FC = () => {
     const initialFormState = {
         destination: '',
@@ -345,30 +346,24 @@ const AIPlannerPage: React.FC = () => {
     const [itinerary, setItinerary] = useState('');
     const [imageUrl, setImageUrl] = useState<string | null>(null);
     const [error, setError] = useState('');
-    const [dynamicBg, setDynamicBg] = useState<string>('https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=2021&auto=format&fit=crop');
+    const [dynamicBg, setDynamicBg] = useState<string>(DEFAULT_PLANNER_BG);
 
     const TOTAL_STEPS = 4;
 
     const fetchDestinationImage = async (dest: string) => {
         if (!dest) return;
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
             const imagePrompt = `Create a breathtaking, cinematic, photorealistic 8k image of ${dest}. Wide angle, travel photography, golden hour lighting.`;
-            
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash-image',
-                contents: { parts: [{ text: imagePrompt }] },
-                config: {
-                    imageConfig: { aspectRatio: "16:9" }
-                },
+            const response = await fetch('/api/gemini/generate-image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: imagePrompt, aspectRatio: "16:9" }),
             });
-            
-            for (const part of response.candidates[0].content.parts) {
-              if (part.inlineData) {
-                const base64ImageBytes = part.inlineData.data;
-                setDynamicBg(`data:image/png;base64,${base64ImageBytes}`);
-                break;
-              }
+            if (response.ok) {
+                const data = await response.json();
+                if (data.imageUrl) {
+                    setDynamicBg(data.imageUrl);
+                }
             }
         } catch (err) {
             console.error("Background image generation failed", err);
@@ -397,7 +392,7 @@ const AIPlannerPage: React.FC = () => {
         setImageUrl(null);
         setError('');
         setStep(1);
-        setDynamicBg('https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=2021&auto=format&fit=crop');
+        setDynamicBg(DEFAULT_PLANNER_BG);
     };
 
     const handleSubmit = async () => {
@@ -426,40 +421,62 @@ const AIPlannerPage: React.FC = () => {
         `;
         
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-            
             // --- Generate Trip Poster Image ---
             const imagePrompt = `Create a breathtaking, realistic travel photography style image of ${formData.destination}. Capture the essence of ${Array.from(formData.interests).join(', ')}. Cinematic lighting.`;
 
-            const imageResponse = await ai.models.generateContent({
-                model: 'gemini-2.5-flash-image',
-                contents: { parts: [{ text: imagePrompt }] },
-                config: {
-                    imageConfig: { aspectRatio: "16:9" }
-                },
+            fetch('/api/gemini/generate-image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: imagePrompt, aspectRatio: "16:9" }),
+            })
+            .then(res => res.ok ? res.json() : null)
+            .then(data => {
+                if (data?.imageUrl) {
+                    setImageUrl(data.imageUrl);
+                    setDynamicBg(data.imageUrl);
+                }
+            })
+            .catch(err => console.error("Trip poster generation failed", err));
+
+            // --- Generate Itinerary Text (Streaming via SSE) ---
+            const streamResponse = await fetch('/api/gemini/generate-stream', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: itineraryPrompt }),
             });
-            
-            for (const part of imageResponse.candidates[0].content.parts) {
-              if (part.inlineData) {
-                const base64ImageBytes = part.inlineData.data;
-                const url = `data:image/png;base64,${base64ImageBytes}`;
-                setImageUrl(url);
-                setDynamicBg(url); 
-                break;
-              }
+
+            if (!streamResponse.ok) {
+                throw new Error("Failed to connect to itinerary stream");
             }
 
-            // --- Generate Itinerary Text ---
-            const textResponseStream = await ai.models.generateContentStream({
-                model: 'gemini-3-flash-preview',
-                contents: itineraryPrompt,
-            });
+            const reader = streamResponse.body?.getReader();
+            const decoder = new TextDecoder();
             let fullTextResponse = '';
-            for await (const chunk of textResponseStream) {
-                const chunkText = chunk.text;
-                if (chunkText) {
-                    fullTextResponse += chunkText;
-                    setItinerary(fullTextResponse);
+
+            if (reader) {
+                let buffer = '';
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const dataStr = line.slice(6).trim();
+                            if (dataStr === '[DONE]') break;
+                            try {
+                                const parsed = JSON.parse(dataStr);
+                                if (parsed.text) {
+                                    fullTextResponse += parsed.text;
+                                    setItinerary(fullTextResponse);
+                                }
+                            } catch (e) {
+                                // Ignore unparseable chunks
+                            }
+                        }
+                    }
                 }
             }
 
@@ -616,13 +633,15 @@ const AIPlannerPage: React.FC = () => {
     return (
         <div className="relative min-h-screen pt-24 pb-12 overflow-hidden transition-all duration-1000">
             {/* Dynamic Background */}
-            <div 
-                className="absolute inset-0 bg-cover bg-center transition-all duration-1000 ease-in-out transform scale-105"
+            <img 
+                src={dynamicBg}
+                alt="Dynamic Background"
+                className="absolute inset-0 w-full h-full object-cover transition-all duration-1000 ease-in-out transform scale-105"
                 style={{ 
-                    backgroundImage: `url(${dynamicBg})`,
                     filter: isLoading || itinerary ? 'brightness(0.2) blur(20px)' : 'brightness(0.3) blur(4px)'
                 }}
-            ></div>
+                referrerPolicy="no-referrer"
+            />
             <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/40 to-black/90"></div>
 
             <div className="relative z-10 max-w-4xl mx-auto px-4 min-h-[70vh] flex flex-col justify-center">

@@ -1,240 +1,439 @@
+import React, { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import SeoHead from '../components/SeoHead';
+import { useAuth } from '../contexts/AuthContext';
+import { VynoAccountProfile, VynoLedgerEntry } from '../types';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import AnimateOnScroll from '../components/AnimateOnScroll';
+interface QuizQuestion {
+  id: string;
+  category: string;
+  question: string;
+  options: string[];
+  points: number;
+}
 
-// --- Icons ---
-const CoinIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-400" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 100-2 1 1 0 000 2zm7-1a1 1 0 10-2 0 1 1 0 002 0zm-7.536 5.879a1 1 0 001.415 0 3 3 0 014.242 0 1 1 0 001.415-1.415 2.5 2.5 0 00-3.536 0 1 1 0 01-1.414 0 1 1 0 00-1.414 1.414 2.5 2.5 0 00-.708 0z" clipRule="evenodd" /></svg>;
-const CheckIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-900" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>;
-const ChestIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>;
-const LockIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>;
-const TrophyIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>;
-
-const StreakDay: React.FC<{ day: number; state: 'claimed' | 'current' | 'locked'; isBig?: boolean }> = ({ day, state, isBig }) => {
-    let bgClass = "bg-zinc-900 border-zinc-800";
-    let content = <span className="text-gray-600 text-xs font-mono">+{day * 10}</span>;
-
-    if (state === 'claimed') {
-        bgClass = "bg-green-500 border-green-400 shadow-[0_0_20px_rgba(34,197,94,0.3)]";
-        content = <CheckIcon />;
-    } else if (state === 'current') {
-        bgClass = "bg-gradient-to-br from-cyan-500 to-blue-600 border-white ring-4 ring-cyan-400/20 animate-pulse";
-        content = isBig ? <ChestIcon /> : <CoinIcon />;
-    } else {
-        content = isBig ? <div className="opacity-20"><ChestIcon /></div> : <span className="opacity-20 text-gray-500 text-xs font-mono">+{day * 10}</span>;
-    }
-
-    return (
-        <div className="flex flex-col items-center gap-3">
-            <div className={`w-12 h-12 sm:w-20 sm:h-20 rounded-2xl border-2 flex items-center justify-center transition-all duration-500 transform ${state === 'current' ? 'scale-110' : 'hover:scale-105'} ${bgClass}`}>
-                {content}
-            </div>
-            <span className={`text-[10px] sm:text-xs font-black uppercase tracking-widest ${state === 'current' ? 'text-cyan-400' : state === 'claimed' ? 'text-green-400' : 'text-zinc-600'}`}>
-                {isBig ? 'LEGENDARY' : `Day ${day}`}
-            </span>
-        </div>
-    );
-};
-
-const QuestItem: React.FC<{ title: string; reward: string; progress: number; target: number; completed?: boolean }> = ({ title, reward, progress, target, completed }) => {
-    const percent = Math.min(100, (progress / target) * 100);
-    return (
-        <div className={`p-4 rounded-xl border transition-all ${completed ? 'bg-green-500/5 border-green-500/20 opacity-60' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}>
-            <div className="flex justify-between items-start mb-3">
-                <div>
-                    <h4 className={`font-bold text-sm ${completed ? 'line-through text-gray-500' : 'text-white'}`}>{title}</h4>
-                    <p className="text-xs text-cyan-400 font-mono mt-1">Reward: {reward}</p>
-                </div>
-                {completed ? <div className="text-green-500"><CheckIcon /></div> : <div className="text-xs font-mono text-gray-500">{progress}/{target}</div>}
-            </div>
-            {!completed && (
-                <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-1000" style={{ width: `${percent}%` }}></div>
-                </div>
-            )}
-        </div>
-    );
-};
+interface LeaderboardEntry {
+  rank: number;
+  displayName: string;
+  pointsBalance: number;
+  lifetimePoints: number;
+  checkinStreak: number;
+}
 
 const DailyRewardsPage: React.FC = () => {
-    const [claimedBox, setClaimedBox] = useState(false);
-    const [totalCredits, setTotalCredits] = useState(1250);
-    const [streakCount, setStreakCount] = useState(3);
+  const { user, token } = useAuth();
+  const [accountKeyInput, setAccountKeyInput] = useState(() =>
+    user?.walletAddress || user?.membershipId || ''
+  );
+  const [activeKey, setActiveKey] = useState<string>('');
+  const [profile, setProfile] = useState<VynoAccountProfile | null>(null);
+  const [ledger, setLedger] = useState<VynoLedgerEntry[]>([]);
+  const [quizzes, setQuizzes] = useState<QuizQuestion[]>([]);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [complianceNotice, setComplianceNotice] = useState('');
+  const [tokenEnabled, setTokenEnabled] = useState(false);
 
-    const handleClaimBox = () => {
-        if (!claimedBox) {
-            setClaimedBox(true);
-            setTotalCredits(prev => prev + 50);
+  const [busyAction, setBusyAction] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number>>({});
+
+  const effectiveAccountKey = token
+    ? ''
+    : activeKey || user?.walletAddress || user?.membershipId || accountKeyInput.trim();
+
+  const loadVynoHub = useCallback(async () => {
+    try {
+      const [statusRes, quizRes, lbRes] = await Promise.all([
+        fetch('/api/vyno/status'),
+        fetch('/api/vyno/quiz-questions'),
+        fetch('/api/vyno/leaderboard'),
+      ]);
+      if (statusRes.ok) {
+        const st = await statusRes.json();
+        setComplianceNotice(st.complianceNotice || '');
+        setTokenEnabled(Boolean(st.tokenDistributionEnabled));
+      }
+      if (quizRes.ok) {
+        const q = await quizRes.json();
+        setQuizzes(q.questions || []);
+      }
+      if (lbRes.ok) {
+        const lb = await lbRes.json();
+        setLeaderboard(lb.leaderboard || []);
+      }
+
+      if (token || effectiveAccountKey) {
+        const url = token
+          ? '/api/vyno/profile'
+          : `/api/vyno/profile?accountKey=${encodeURIComponent(effectiveAccountKey)}`;
+        const profRes = await fetch(url, {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
+        if (profRes.ok) {
+          const p = await profRes.json();
+          setProfile(p.profile || null);
+          setLedger(p.ledger || []);
         }
-    };
+      }
+    } catch {
+      // non-fatal
+    }
+  }, [token, effectiveAccountKey]);
 
-    return (
-        <div className="pt-24 min-h-screen bg-[#0A0A10] text-white selection:bg-cyan-500 selection:text-black">
-            
-            {/* Header / Stats Bar */}
-            <section className="relative py-12 px-4 border-b border-white/5">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(var(--accent-secondary-rgb),0.1)_0%,transparent_70%)]"></div>
-                <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8 relative z-10">
-                    <div className="text-center md:text-left">
-                        <h1 className="text-4xl md:text-6xl font-black font-cinzel tracking-tight text-white mb-2 uppercase">
-                            Vault <span className="text-cyan-400">Access</span>
-                        </h1>
-                        <p className="text-gray-400 font-mono text-sm uppercase tracking-widest">Global Rewards Protocol v2.4</p>
-                    </div>
-                    <div className="flex gap-4">
-                        <div className="bg-black/60 border border-white/10 px-6 py-4 rounded-2xl backdrop-blur-xl flex items-center gap-4">
-                            <div className="p-3 bg-yellow-500/20 rounded-full"><CoinIcon /></div>
-                            <div>
-                                <p className="text-xs text-gray-500 uppercase font-bold tracking-tighter">VYNO Balance</p>
-                                <p className="text-2xl font-black text-white font-mono">{totalCredits.toLocaleString()}</p>
-                            </div>
-                        </div>
-                        <div className="bg-black/60 border border-white/10 px-6 py-4 rounded-2xl backdrop-blur-xl flex items-center gap-4">
-                            <div className="p-3 bg-cyan-500/20 rounded-full text-cyan-400"><TrophyIcon /></div>
-                            <div>
-                                <p className="text-xs text-gray-500 uppercase font-bold tracking-tighter">Global Rank</p>
-                                <p className="text-2xl font-black text-white font-mono">#421</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
+  useEffect(() => {
+    if (user?.walletAddress && !activeKey) {
+      setAccountKeyInput(user.walletAddress);
+    }
+    loadVynoHub();
+  }, [user, activeKey, loadVynoHub]);
 
-            {/* Main Rewards Grid */}
-            <main className="max-w-7xl mx-auto px-4 py-16 grid grid-cols-1 lg:grid-cols-3 gap-12">
-                
-                {/* Left Column: Streak & Quests */}
-                <div className="lg:col-span-2 space-y-12">
-                    <section>
-                        <div className="flex justify-between items-end mb-8">
-                            <div>
-                                <h2 className="text-2xl font-bold font-cinzel text-white uppercase tracking-wider">Active Streak</h2>
-                                <p className="text-sm text-gray-500">Collect 7 consecutive days for a Mega Chest.</p>
-                            </div>
-                            <span className="text-4xl font-black text-cyan-400 font-mono tracking-tighter">{streakCount} <span className="text-xs text-gray-500 font-sans uppercase">Days</span></span>
-                        </div>
-                        
-                        <div className="relative p-8 bg-zinc-900/40 border border-zinc-800 rounded-3xl backdrop-blur-sm overflow-hidden">
-                            <div className="absolute top-1/2 left-0 w-full h-1 bg-zinc-800 -translate-y-1/2 z-0"></div>
-                            <div className="relative z-10 flex justify-between gap-4">
-                                {[1, 2, 3, 4, 5, 6, 7].map(day => (
-                                    <StreakDay 
-                                        key={day} 
-                                        day={day} 
-                                        state={day < streakCount ? 'claimed' : day === streakCount ? 'current' : 'locked'}
-                                        isBig={day === 7}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                    </section>
+  const handleLoadExplorerKey = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg(null);
+    if (!accountKeyInput.trim()) {
+      setErrorMsg('Enter your Founding Member ID (VSC-UAE-...), wallet address (0x...), or explorer alias.');
+      return;
+    }
+    setActiveKey(accountKeyInput.trim());
+  };
 
-                    <section>
-                        <h2 className="text-2xl font-bold font-cinzel text-white mb-8 uppercase tracking-wider">Daily Quests</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <QuestItem title="The Architect" reward="150 VYNO" progress={1} target={1} completed={true} />
-                            <QuestItem title="World Explorer" reward="300 VYNO" progress={120} target={500} />
-                            <QuestItem title="Community Pillar" reward="100 VYNO" progress={2} target={5} />
-                            <QuestItem title="Night Owl" reward="50 VYNO" progress={0} target={1} />
-                        </div>
-                    </section>
-                </div>
+  const postAction = async (endpoint: string, bodyPayload: Record<string, any> = {}, label = 'action') => {
+    setBusyAction(label);
+    setErrorMsg(null);
+    setFeedback(null);
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers.Authorization = `Bearer ${token}`;
 
-                {/* Right Column: Loot Box & Wheel */}
-                <div className="space-y-12">
-                    <section className="relative group">
-                        <div className={`absolute inset-0 bg-gradient-to-br from-cyan-600 to-purple-600 rounded-3xl blur-2xl transition-opacity duration-700 ${claimedBox ? 'opacity-0' : 'opacity-40 group-hover:opacity-60'}`}></div>
-                        <div className="relative bg-zinc-900 border border-white/10 rounded-3xl p-10 text-center shadow-2xl">
-                            {claimedBox ? (
-                                <div className="animate-fadeIn">
-                                    <div className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border-2 border-green-500/50">
-                                        <CheckIcon />
-                                    </div>
-                                    <h3 className="text-3xl font-black mb-2 uppercase">Sync Complete</h3>
-                                    <p className="text-green-400 font-mono text-sm">+50 VYNO CREDITS</p>
-                                    <div className="mt-8 pt-8 border-t border-white/5">
-                                        <p className="text-xs text-gray-500 uppercase tracking-widest font-bold">Next Box available in:</p>
-                                        <p className="text-2xl font-mono mt-2">14:22:09</p>
-                                    </div>
-                                </div>
-                            ) : (
-                                <>
-                                    <div className="text-8xl mb-8 transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 drop-shadow-[0_0_30px_rgba(0,242,254,0.5)]">
-                                        📦
-                                    </div>
-                                    <h3 className="text-2xl font-black mb-4 uppercase tracking-tighter">Daily Signal Box</h3>
-                                    <p className="text-gray-400 text-sm mb-8 leading-relaxed">
-                                        Decrypt your daily mystery parcel to unlock travel credits or rare status XP.
-                                    </p>
-                                    <button 
-                                        onClick={handleClaimBox}
-                                        className="w-full py-4 bg-white text-black font-black uppercase tracking-[0.2em] text-xs hover:bg-cyan-400 transition-colors rounded-xl shadow-lg shadow-white/5"
-                                    >
-                                        INITIALIZE DECRYPT
-                                    </button>
-                                </>
-                            )}
-                        </div>
-                    </section>
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          accountKey: effectiveAccountKey || undefined,
+          displayName: user?.fullName || undefined,
+          walletAddress: user?.walletAddress || undefined,
+          ...bodyPayload,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setErrorMsg(data.error || 'Action could not be completed.');
+        return;
+      }
+      setFeedback(
+        data.message ||
+          (data.prizeLabel
+            ? `${data.prizeLabel} awarded! (+${data.pointsAwarded} PTS)`
+            : data.badgeLabel
+            ? `${data.badgeLabel} revealed! (+${data.pointsAwarded} PTS)`
+            : `+${data.pointsAwarded || 0} Participation Points recorded.`)
+      );
+      await loadVynoHub();
+    } catch {
+      setErrorMsg('Network error communicating with VYNO ledger.');
+    } finally {
+      setBusyAction(null);
+    }
+  };
 
-                    <section className="bg-gradient-to-br from-zinc-900 to-black border border-white/5 rounded-3xl p-8 overflow-hidden relative">
-                        <div className="absolute -right-20 -top-20 w-64 h-64 bg-cyan-500/10 rounded-full blur-[80px]"></div>
-                        <h3 className="text-xl font-bold mb-4 flex items-center gap-3 font-cinzel">
-                             <span className="text-2xl">🎡</span> MEGA WHEEL
-                        </h3>
-                        <p className="text-gray-500 text-xs mb-8 uppercase tracking-widest font-bold">Available Day 7 Only</p>
-                        
-                        <div className="relative aspect-square max-w-[200px] mx-auto opacity-30 grayscale pointer-events-none">
-                            <div className="absolute inset-0 rounded-full border-8 border-dashed border-zinc-700 animate-spin-slow"></div>
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="text-center">
-                                    <LockIcon />
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div className="mt-8 p-4 bg-black/40 rounded-xl border border-white/5">
-                            <p className="text-[10px] text-gray-500 font-mono uppercase">Loot Probability:</p>
-                            <div className="mt-2 space-y-2">
-                                <div className="flex justify-between text-[10px]"><span className="text-gray-400">1,000 VYNO</span> <span className="text-white">60%</span></div>
-                                <div className="flex justify-between text-[10px]"><span className="text-cyan-400">Weekend Trip</span> <span className="text-white">5%</span></div>
-                                <div className="flex justify-between text-[10px]"><span className="text-purple-400">Status Upgrade</span> <span className="text-white">15%</span></div>
-                            </div>
-                        </div>
-                    </section>
-                </div>
-            </main>
+  const handleAttemptClaim = async () => {
+    setBusyAction('claim');
+    setErrorMsg(null);
+    setFeedback(null);
+    try {
+      const res = await fetch('/api/vyno/claims', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accountKey: effectiveAccountKey }),
+      });
+      const data = await res.json();
+      setErrorMsg(data.error || 'Token conversion is currently gated pending compliance review.');
+    } catch {
+      setErrorMsg('Unable to check token claim status.');
+    } finally {
+      setBusyAction(null);
+    }
+  };
 
-            {/* Winners Ticker */}
-            <div className="w-full bg-zinc-950 border-y border-white/5 py-4 overflow-hidden mt-12 relative">
-                <div className="absolute top-0 left-0 h-full w-20 bg-gradient-to-r from-zinc-950 to-transparent z-10"></div>
-                <div className="absolute top-0 right-0 h-full w-20 bg-gradient-to-l from-zinc-950 to-transparent z-10"></div>
-                <div className="animate-[slide-in-from-right_40s_linear_infinite] inline-block whitespace-nowrap text-xs font-mono text-gray-500">
-                    {[1,2,3,4,5].map(i => (
-                        <React.Fragment key={i}>
-                            <span className="mx-12 uppercase tracking-widest font-bold"><span className="text-cyan-400">AGENT_009</span> claimed 500 VYNO •</span>
-                            <span className="mx-12 uppercase tracking-widest font-bold"><span className="text-purple-400">NOMAD_LUXE</span> reached 30 Day Streak •</span>
-                            <span className="mx-12 uppercase tracking-widest font-bold"><span className="text-yellow-400">VIP_ELENA</span> unlocked MEGA BOX •</span>
-                            <span className="mx-12 uppercase tracking-widest font-bold"><span className="text-white">USER_X72</span> won Free Desert Safari •</span>
-                        </React.Fragment>
-                    ))}
-                </div>
-            </div>
-            
-            <section className="py-24 text-center max-w-2xl mx-auto px-4">
-                <AnimateOnScroll>
-                    <h2 className="text-3xl font-bold font-cinzel mb-6 uppercase">VYNO Utility</h2>
-                    <p className="text-gray-400 leading-relaxed mb-10">
-                        VYNO is the native fuel of the Vanhsya ecosystem. Stake your rewards to lower booking fees, gain early access to partner inventory, or trade them on the decentralized marketplace coming in Q1 2025.
-                    </p>
-                    <div className="flex flex-wrap justify-center gap-4">
-                        <span className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-[10px] font-mono uppercase tracking-widest text-gray-400">Staking Pool: 14% APY</span>
-                        <span className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-[10px] font-mono uppercase tracking-widest text-gray-400">Fees: Burn Active</span>
-                    </div>
-                </AnimateOnScroll>
-            </section>
+  return (
+    <div className="pt-28 pb-24 min-h-screen bg-[#0D0A14] text-white px-4">
+      <SeoHead
+        title="Participation Points Arcade & Compliance Gate | Vanhsya"
+        description="Server-verified non-financial Participation Points check-ins, spin wheel, scratch card, and UAE knowledge quizzes while token distributions remain compliance-gated."
+        path="/daily-rewards"
+      />
 
+      <div className="max-w-6xl mx-auto space-y-10">
+        {/* Compliance Header */}
+        <div className="p-6 sm:p-8 rounded-3xl border border-amber-500/40 bg-[#151121] space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span className="inline-block text-xs font-mono uppercase tracking-[0.25em] text-amber-300 border border-amber-500/35 bg-amber-500/10 px-3 py-1 rounded-full">
+              {tokenEnabled ? 'Verified Contract Active' : 'Participation Points Mode · Compliance Review Gate'}
+            </span>
+            <Link to="/vyno" className="text-xs font-semibold text-cyan-300 hover:underline">
+              Open Web3 Signature Console &rarr;
+            </Link>
+          </div>
+          <h1 className="text-3xl sm:text-5xl font-cinzel font-black text-white">
+            VYNO Explorer Participation Arcade
+          </h1>
+          <p className="text-gray-300 text-xs sm:text-sm leading-relaxed">
+            {complianceNotice ||
+              'On-chain VYNO token transfers, APY yields, and wallet withdrawals remain disabled pending compliance approval. Interactive actions here award server-verified Participation Points only.'}
+          </p>
         </div>
-    );
+
+        {/* Account Selector / Profile Bar */}
+        <div className="p-6 rounded-3xl bg-[#130E20] border border-purple-500/30 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+          <div className="lg:col-span-6 space-y-2">
+            {user ? (
+              <div>
+                <p className="text-xs font-mono uppercase text-cyan-300">Authenticated Account Ledger</p>
+                <p className="text-lg font-bold text-white">{user.fullName}</p>
+                <p className="text-xs text-gray-400">
+                  Streak: {profile?.checkinStreak || 0} day(s) · Balance:{' '}
+                  <strong className="text-amber-300">{profile?.pointsBalance || 0} PTS</strong>
+                </p>
+              </div>
+            ) : (
+              <form onSubmit={handleLoadExplorerKey} className="space-y-2">
+                <label className="block text-xs font-semibold text-gray-300">
+                  Enter Wallet (0x...), Founding ID (VSC-UAE-...), or Alias (or{' '}
+                  <Link to="/dashboard" className="text-purple-300 underline">
+                    Sign In
+                  </Link>
+                  )
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={accountKeyInput}
+                    onChange={(e) => setAccountKeyInput(e.target.value)}
+                    placeholder="VSC-UAE-0001-XXXX or 0x... or explorer_name"
+                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-black/50 border border-white/15 text-xs text-white font-mono"
+                  />
+                  <button
+                    type="submit"
+                    className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-xs font-bold"
+                  >
+                    Load Ledger
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+
+          <div className="lg:col-span-6 grid grid-cols-3 gap-3 text-center">
+            <div className="p-3 rounded-2xl bg-black/45 border border-white/10">
+              <p className="text-[10px] font-mono uppercase text-gray-400">Points Balance</p>
+              <p className="text-2xl font-black text-amber-300 mt-1">
+                {profile?.pointsBalance ?? 0}
+              </p>
+            </div>
+            <div className="p-3 rounded-2xl bg-black/45 border border-white/10">
+              <p className="text-[10px] font-mono uppercase text-gray-400">Daily Streak</p>
+              <p className="text-2xl font-black text-cyan-300 mt-1">
+                {profile?.checkinStreak ?? 0}d
+              </p>
+            </div>
+            <div className="p-3 rounded-2xl bg-black/45 border border-white/10">
+              <p className="text-[10px] font-mono uppercase text-gray-400">Token Claim</p>
+              <button
+                type="button"
+                onClick={handleAttemptClaim}
+                disabled={busyAction === 'claim'}
+                className="mt-1 px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-[11px] font-bold text-gray-200"
+              >
+                {tokenEnabled ? 'Claim' : 'Gated'}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {feedback && (
+          <div className="p-4 rounded-2xl bg-emerald-950/60 border border-emerald-500/40 text-xs text-emerald-200">
+            {feedback}
+          </div>
+        )}
+        {errorMsg && (
+          <div className="p-4 rounded-2xl bg-rose-950/60 border border-rose-500/40 text-xs text-rose-200">
+            {errorMsg}
+          </div>
+        )}
+
+        {/* Daily Activities */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="p-6 rounded-3xl bg-[#130E20] border border-white/10 flex flex-col justify-between space-y-4">
+            <div>
+              <span className="text-[11px] font-mono uppercase text-cyan-300">Daily Streak Bonus</span>
+              <h2 className="text-xl font-cinzel font-bold text-white mt-1">Daily Explorer Check-In</h2>
+              <p className="text-xs text-gray-400 mt-2">
+                Record your verified daily check-in (20–100 Participation Points based on consecutive streak).
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={(!token && !effectiveAccountKey) || busyAction === 'checkin' || profile?.canCheckinToday === false}
+              onClick={() => postAction('/api/vyno/checkin', {}, 'checkin')}
+              className="w-full py-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold disabled:opacity-50"
+            >
+              {profile?.canCheckinToday === false
+                ? 'Checked In Today ✓'
+                : busyAction === 'checkin'
+                ? 'Recording...'
+                : 'Claim Daily Check-In'}
+            </button>
+          </div>
+
+          <div className="p-6 rounded-3xl bg-[#130E20] border border-white/10 flex flex-col justify-between space-y-4">
+            <div>
+              <span className="text-[11px] font-mono uppercase text-purple-300">Server-CSPRNG Spin</span>
+              <h2 className="text-xl font-cinzel font-bold text-white mt-1">Emirates Compass Wheel</h2>
+              <p className="text-xs text-gray-400 mt-2">
+                Once per UTC day, spin our server-verified wheel for 15 to 120 Participation Points.
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={(!token && !effectiveAccountKey) || busyAction === 'spin' || profile?.canSpinToday === false}
+              onClick={() => postAction('/api/vyno/spin', {}, 'spin')}
+              className="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold disabled:opacity-50"
+            >
+              {profile?.canSpinToday === false
+                ? 'Spun Today ✓'
+                : busyAction === 'spin'
+                ? 'Spinning...'
+                : 'Spin Wheel'}
+            </button>
+          </div>
+
+          <div className="p-6 rounded-3xl bg-[#130E20] border border-white/10 flex flex-col justify-between space-y-4">
+            <div>
+              <span className="text-[11px] font-mono uppercase text-amber-300">Daily Reveal</span>
+              <h2 className="text-xl font-cinzel font-bold text-white mt-1">Twilight Scratch Pass</h2>
+              <p className="text-xs text-gray-400 mt-2">
+                Reveal today&apos;s Golden Dune or Twilight Oasis Participation Pass on the server ledger.
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={(!token && !effectiveAccountKey) || busyAction === 'scratch' || profile?.canScratchToday === false}
+              onClick={() => postAction('/api/vyno/scratch', {}, 'scratch')}
+              className="w-full py-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold disabled:opacity-50"
+            >
+              {profile?.canScratchToday === false
+                ? 'Revealed Today ✓'
+                : busyAction === 'scratch'
+                ? 'Revealing...'
+                : 'Reveal Scratch Pass'}
+            </button>
+          </div>
+        </div>
+
+        {/* UAE Knowledge Quizzes */}
+        <div className="p-6 sm:p-8 rounded-3xl bg-[#130E20] border border-white/10 space-y-6">
+          <div>
+            <h2 className="text-2xl font-cinzel font-bold text-white">UAE &amp; Web3 Knowledge Quizzes</h2>
+            <p className="text-xs text-gray-400 mt-1">
+              Answer correctly to earn permanent Participation Points on your ledger.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {quizzes.map((q) => {
+              const solved = profile?.completedQuizIds?.includes(q.id);
+              return (
+                <div key={q.id} className="p-5 rounded-2xl bg-black/45 border border-white/10 space-y-3 text-xs">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-mono uppercase text-purple-300">{q.category}</span>
+                    <span className="font-mono font-bold text-amber-300">+{q.points} PTS</span>
+                  </div>
+                  <p className="text-sm font-semibold text-white">{q.question}</p>
+                  <div className="space-y-1.5">
+                    {q.options.map((opt, idx) => (
+                      <label
+                        key={idx}
+                        className={`flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer ${
+                          selectedAnswers[q.id] === idx
+                            ? 'border-purple-400 bg-purple-950/40 text-white'
+                            : 'border-white/10 text-gray-300'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name={`quiz-${q.id}`}
+                          disabled={solved}
+                          checked={selectedAnswers[q.id] === idx}
+                          onChange={() => setSelectedAnswers((prev) => ({ ...prev, [q.id]: idx }))}
+                          className="accent-purple-500"
+                        />
+                        <span>{opt}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    disabled={solved || (!token && !effectiveAccountKey) || selectedAnswers[q.id] === undefined || busyAction === q.id}
+                    onClick={() => postAction('/api/vyno/quiz', { quizId: q.id, selectedIndex: selectedAnswers[q.id] }, q.id)}
+                    className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold disabled:opacity-50"
+                  >
+                    {solved ? 'Completed ✓' : 'Submit Answer'}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Ledger + Leaderboard */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="p-6 rounded-3xl bg-[#130E20] border border-white/10 space-y-4">
+            <h2 className="text-xl font-cinzel font-bold text-white">Your Points Ledger</h2>
+            {ledger.length === 0 ? (
+              <p className="text-xs text-gray-400">Load your account or complete any check-in/quiz above to see server ledger entries.</p>
+            ) : (
+              <div className="space-y-2 max-h-72 overflow-y-auto pr-1 text-xs">
+                {ledger.map((item) => (
+                  <div key={item.id} className="p-3 rounded-xl bg-black/45 border border-white/10 flex justify-between gap-2">
+                    <div>
+                      <p className="font-semibold text-white">{item.description}</p>
+                      <p className="text-[10px] font-mono text-gray-400">
+                        {item.entryRef} · {new Date(item.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                    <span className="font-mono font-bold text-emerald-300 shrink-0">
+                      +{item.pointsDelta} PTS
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="p-6 rounded-3xl bg-[#130E20] border border-white/10 space-y-4">
+            <h2 className="text-xl font-cinzel font-bold text-white">Top Participation Leaderboard</h2>
+            {leaderboard.length === 0 ? (
+              <p className="text-xs text-gray-400">No leaderboard points recorded yet.</p>
+            ) : (
+              <div className="space-y-2 text-xs">
+                {leaderboard.map((row) => (
+                  <div key={row.rank} className="p-3 rounded-xl bg-black/45 border border-white/10 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="w-6 h-6 rounded-full bg-purple-600/30 text-purple-200 font-mono font-bold flex items-center justify-center">
+                        #{row.rank}
+                      </span>
+                      <span className="font-semibold text-white">{row.displayName}</span>
+                    </div>
+                    <span className="font-mono text-amber-300 font-bold">{row.pointsBalance} PTS</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default DailyRewardsPage;

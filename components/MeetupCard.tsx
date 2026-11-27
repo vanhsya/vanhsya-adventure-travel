@@ -1,80 +1,123 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Meetup } from '../types';
+import { SocialEvent } from '../types';
 
 interface MeetupCardProps {
-  meetup: Meetup;
+  event: SocialEvent;
 }
 
-const MeetupCard: React.FC<MeetupCardProps> = ({ meetup }) => {
-  const spotsLeft = meetup.capacity - meetup.attendees;
-  const progressPercentage = (meetup.attendees / meetup.capacity) * 100;
+const STATUS_STYLES: Record<string, { label: string; className: string }> = {
+  upcoming: {
+    label: 'Verified · Upcoming',
+    className: 'text-purple-200 border-purple-400/40 bg-purple-950/60',
+  },
+  sold_out: {
+    label: 'Sold Out',
+    className: 'text-amber-200 border-amber-400/40 bg-amber-950/60',
+  },
+  completed: {
+    label: 'Completed',
+    className: 'text-emerald-200 border-emerald-400/40 bg-emerald-950/60',
+  },
+  cancelled: {
+    label: 'Cancelled',
+    className: 'text-rose-200 border-rose-400/40 bg-rose-950/60',
+  },
+};
+
+const MeetupCard: React.FC<MeetupCardProps> = ({ event }) => {
+  const attendeesCount = event.attendeesCount || 0;
+  const spotsLeft = Math.max(0, event.capacity - attendeesCount);
+  const progressPercentage = event.capacity > 0 ? Math.min(100, (attendeesCount / event.capacity) * 100) : 0;
+  const statusInfo = STATUS_STYLES[event.status] || STATUS_STYLES.upcoming;
 
   return (
-    <div 
-      className="rounded-xl overflow-hidden shadow-lg flex flex-col transform border transition-all duration-300 hover:-translate-y-1 group"
-      style={{
-        backgroundColor: 'var(--bg-secondary)',
-        borderColor: 'var(--border-color)',
-        '--shadow-color-var': 'var(--shadow-color-secondary)'
-      } as React.CSSProperties}
-      onMouseOver={e => {
-          e.currentTarget.style.boxShadow = `0 6px 20px -3px var(--shadow-color-var)`;
-          e.currentTarget.style.borderColor = 'var(--accent-secondary)';
-      }}
-      onMouseOut={e => {
-          e.currentTarget.style.boxShadow = 'none';
-          e.currentTarget.style.borderColor = 'var(--border-color)';
-      }}
-    >
-      <div className="relative">
-        <div 
-          className="h-48 bg-cover bg-center" 
-          style={{ backgroundImage: `url(${meetup.imageUrl})` }}
-          aria-label={meetup.title}
-        ></div>
-        <div className="absolute top-2 right-2 flex items-center bg-black/60 backdrop-blur-sm p-2 rounded-lg">
-            <img src={meetup.host.avatarUrl} alt={meetup.host.name} className="w-8 h-8 rounded-full border-2 border-white/50 object-cover" />
-            <div className="ml-2 text-xs text-white">
-                <p className="font-semibold leading-tight">Hosted by</p>
-                <p className="leading-tight">{meetup.host.name}</p>
-            </div>
+    <article className="rounded-2xl overflow-hidden flex flex-col border border-purple-500/20 bg-[#120F1D] transition-all duration-300 hover:-translate-y-1 hover:border-purple-400/50 shadow-xl">
+      <div className="relative h-48 overflow-hidden bg-gradient-to-br from-[#1C1430] to-[#0D0A16]">
+        {event.coverImageUrl ? (
+          <img
+            src={event.coverImageUrl}
+            alt={event.title}
+            className="w-full h-full object-cover"
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-gradient-to-br from-purple-950/70 via-[#150E26] to-[#0B0812]">
+            <span className="text-xs uppercase tracking-[0.25em] text-purple-300 font-semibold">
+              Vanhsya Social Club
+            </span>
+            <p className="text-lg font-cinzel font-bold text-white mt-2">{event.emirate}</p>
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#120F1D] via-transparent to-black/30" />
+        <div className="absolute top-3 left-3">
+          <span className={`px-2.5 py-1 rounded-md text-[11px] font-semibold border ${statusInfo.className}`}>
+            {statusInfo.label}
+          </span>
+        </div>
+        <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-xs text-gray-200">
+          <span className="font-medium">
+            {event.city}, {event.emirate}
+          </span>
+          <span className="text-purple-200 font-medium">{event.ageRestriction}</span>
         </div>
       </div>
-      <div className="p-4 flex-1 flex flex-col">
-        <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--accent-primary)'}}>
-            {meetup.city}, {meetup.country}
+
+      <div className="p-5 flex-1 flex flex-col">
+        <p className="text-xs text-purple-300 font-semibold tracking-wide">
+          {event.category} · {event.eventDate} · {event.startTime}
         </p>
-        <h3 className="font-bold text-lg mt-1" style={{ color: 'var(--text-primary)'}}>{meetup.title}</h3>
-        <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)'}}>{meetup.date} &bull; {meetup.time}</p>
-        
-        <div className="mt-4 flex-grow">
-            <div className="w-full bg-gray-700 rounded-full h-2.5">
-                <div 
-                    className="h-2.5 rounded-full" 
-                    style={{ width: `${progressPercentage}%`, backgroundColor: 'var(--accent-secondary)' }}
-                ></div>
-            </div>
-            <p className="text-xs text-right mt-1" style={{ color: 'var(--text-secondary)'}}>
-                {spotsLeft > 0 ? `${spotsLeft} spots left!` : 'Event Full!'}
-            </p>
+
+        <h3 className="font-bold text-lg text-white font-cinzel mt-1.5 leading-snug">
+          {event.title}
+        </h3>
+
+        <p className="text-xs text-gray-400 mt-1">
+          {event.venueName}
+          {event.hostName ? ` · Host: ${event.hostName}` : ''}
+        </p>
+
+        <p className="text-sm text-gray-300 mt-3 line-clamp-2 leading-relaxed">
+          {event.description}
+        </p>
+
+        <div className="mt-5 pt-4 border-t border-white/10">
+          <div className="flex items-center justify-between text-xs text-gray-300 mb-1.5">
+            <span>
+              {attendeesCount} / {event.capacity} seats reserved
+            </span>
+            <span className="font-semibold text-purple-300">
+              {event.status === 'cancelled'
+                ? 'Cancelled'
+                : event.status === 'completed'
+                ? 'Event Concluded'
+                : spotsLeft > 0
+                ? `${spotsLeft} spots open`
+                : 'Sold Out'}
+            </span>
+          </div>
+          <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-purple-500 to-violet-300 transition-all duration-300"
+              style={{ width: `${progressPercentage}%` }}
+            />
+          </div>
         </div>
 
-        <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--border-color)'}}>
-          <button 
-            disabled={spotsLeft <= 0}
-            className="w-full px-4 py-2 rounded-md text-white text-sm font-semibold transition-colors transform hover:scale-105 shadow-md disabled:bg-gray-600 disabled:cursor-not-allowed" 
-            style={{ 
-              backgroundColor: 'var(--accent-primary)',
-              boxShadow: '0 4px 6px -1px var(--shadow-color-primary), 0 2px 4px -1px var(--shadow-color-primary)'
-            }}
+        <div className="mt-5">
+          <Link
+            to={`/meetups/${event.slug}`}
+            className="block w-full text-center px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold transition-colors"
           >
-            {spotsLeft > 0 ? 'View Details' : 'Full'}
-          </button>
+            {event.status === 'upcoming' && spotsLeft > 0
+              ? 'View Details & RSVP'
+              : event.status === 'completed'
+              ? 'View Event & Share Feedback'
+              : 'View Event Details'}
+          </Link>
         </div>
       </div>
-    </div>
+    </article>
   );
 };
 

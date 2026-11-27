@@ -3,13 +3,21 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { TOURS_DATA, CURRENCY_RATES_FROM_USD } from '../constants';
 import { useAppContext } from '../contexts/AppContext';
+import { useAuth } from '../contexts/AuthContext';
 import NotFoundPage from './NotFoundPage';
-import { GoogleGenAI } from "@google/genai";
 import InteractiveMap from '../components/InteractiveMap';
-import { ItineraryItem, MapMarkerData, Booking } from '../types';
+import { ReceiptModal } from '../components/ReceiptModal';
+import {
+  ItineraryItem,
+  MapMarkerData,
+  Booking,
+  PaymentTransactionRecord,
+  TravelBookingRecord,
+} from '../types';
 import AnimateOnScroll from '../components/AnimateOnScroll';
 import SkeletonLoader from '../components/SkeletonLoader';
 import ErrorDisplay from '../components/ErrorDisplay';
+import { BRAND_CONTACTS, buildWhatsAppDirectEnquiryUrl } from '../utils/utm';
 
 
 declare global {
@@ -79,6 +87,8 @@ const ItineraryAccordion: React.FC<{ items: ItineraryItem[] }> = ({ items }) => 
 const WeatherDisplay: React.FC<{ weatherMarkdown: string; city: string }> = ({ weatherMarkdown, city }) => {
   const { theme } = useAppContext();
   const [htmlContent, setHtmlContent] = useState('');
+  const [shareFeedback, setShareFeedback] = useState('');
+
   useEffect(() => {
     if (weatherMarkdown && window.marked) {
       setHtmlContent(window.marked.parse(weatherMarkdown));
@@ -95,10 +105,19 @@ const WeatherDisplay: React.FC<{ weatherMarkdown: string; city: string }> = ({ w
         title: `Weather Forecast for ${city}`,
         text: `Here's the weather for ${city}:\n\n${textContent}`,
       }).catch(console.error);
-    } else {
+    } else if (navigator.clipboard) {
       navigator.clipboard.writeText(`Here's the weather for ${city}:\n\n${textContent}`)
-        .then(() => alert('Forecast copied to clipboard!'))
-        .catch(() => alert('Could not copy forecast. Web Share API not supported.'));
+        .then(() => {
+          setShareFeedback('Forecast copied to clipboard!');
+          setTimeout(() => setShareFeedback(''), 3000);
+        })
+        .catch(() => {
+          setShareFeedback('Could not copy forecast automatically.');
+          setTimeout(() => setShareFeedback(''), 3000);
+        });
+    } else {
+      setShareFeedback('Share API not available in this browser.');
+      setTimeout(() => setShareFeedback(''), 3000);
     }
   };
 
@@ -110,12 +129,17 @@ const WeatherDisplay: React.FC<{ weatherMarkdown: string; city: string }> = ({ w
         className={`prose max-w-none prose-table:w-full prose-td:px-2 prose-td:py-1 prose-th:px-2 prose-th:py-1 ${theme === 'dark' ? 'prose-invert' : ''}`}
         dangerouslySetInnerHTML={{ __html: htmlContent }} 
       />
-      <button 
-        onClick={handleShare}
-        className="mt-4 w-full px-4 py-2 bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-600 transition-colors"
-      >
-        Share Forecast
-      </button>
+      <div className="mt-4 space-y-2">
+        <button 
+          onClick={handleShare}
+          className="w-full px-4 py-2 bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-600 transition-colors"
+        >
+          Share Forecast
+        </button>
+        {shareFeedback && (
+          <p className="text-xs text-center text-emerald-400 font-medium">{shareFeedback}</p>
+        )}
+      </div>
     </>
   );
 };
@@ -207,11 +231,31 @@ const PricingOffer: React.FC<{ price: number, currency: string, discount?: numbe
 };
 
 
+const TIME_SLOT_OPTIONS = [
+  '09:00 AM · Morning Departure',
+  '03:30 PM · Sunset Session',
+  '07:00 PM · Evening Concierge',
+];
+
 const TourDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const { currency, addBooking } = useAppContext();
+  const { user, token, isFavorite, toggleFavorite } = useAuth();
   const navigate = useNavigate();
   const [pax, setPax] = useState(1);
+  const [travelDate, setTravelDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 5);
+    return d.toISOString().split('T')[0];
+  });
+  const [timeSlot, setTimeSlot] = useState(TIME_SLOT_OPTIONS[0]);
+  const [customerName, setCustomerName] = useState(user?.fullName || '');
+  const [customerEmail, setCustomerEmail] = useState(user?.email || '');
+  const [customerPhone, setCustomerPhone] = useState(user?.phone || '');
+  const [specialRequests, setSpecialRequests] = useState('');
+  const [bookingBusy, setBookingBusy] = useState(false);
+  const [bookingError, setBookingError] = useState<string | null>(null);
+
   const [weather, setWeather] = useState('');
   const [isWeatherLoading, setIsWeatherLoading] = useState(false);
   const [weatherError, setWeatherError] = useState('');
@@ -223,27 +267,43 @@ const TourDetailPage: React.FC = () => {
   const [packingListError, setPackingListError] = useState('');
   const [isVrModalOpen, setIsVrModalOpen] = useState(false);
   const [isVrLoading, setIsVrLoading] = useState(true);
-  
-  // Booking Confirmation State
-  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
-  const [bookingId, setBookingId] = useState('');
+
+  // Server Booking & Receipt Modal State
+  const [receiptOpen, setReceiptOpen] = useState(false);
+  const [receiptBooking, setReceiptBooking] = useState<TravelBookingRecord | null>(null);
+  const [receiptTx, setReceiptTx] = useState<PaymentTransactionRecord | null>(null);
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+  const [checkoutNote, setCheckoutNote] = useState<string | null>(null);
+
+  const [videoUrl, setVideoUrl] = useState('');
+  const [videoStatus, setVideoStatus] = useState('');
+  const [isVideoLoading, setIsVideoLoading] = useState(false);
 
   const tour = TOURS_DATA.find(t => t.slug === slug);
   const [selectedImage, setSelectedImage] = useState(tour?.images[0]);
 
   useEffect(() => {
+    if (user) {
+      setCustomerName((prev) => prev || user.fullName);
+      setCustomerEmail((prev) => prev || user.email);
+      setCustomerPhone((prev) => prev || user.phone || '');
+    }
+  }, [user]);
+
+  useEffect(() => {
     setSelectedImage(tour?.images[0]);
+    setVideoUrl('');
   }, [slug, tour]);
   
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setIsVrModalOpen(false);
-        setIsBookingModalOpen(false);
+        setReceiptOpen(false);
       }
     };
     
-    if (isVrModalOpen || isBookingModalOpen) {
+    if (isVrModalOpen || receiptOpen) {
       window.addEventListener('keydown', handleEsc);
       document.body.style.overflow = 'hidden';
     }
@@ -252,7 +312,7 @@ const TourDetailPage: React.FC = () => {
       window.removeEventListener('keydown', handleEsc);
       document.body.style.overflow = '';
     };
-  }, [isVrModalOpen, isBookingModalOpen]);
+  }, [isVrModalOpen, receiptOpen]);
 
   const tourMarker: MapMarkerData[] = useMemo(() => {
     if (!tour) return [];
@@ -272,12 +332,16 @@ const TourDetailPage: React.FC = () => {
     const prompt = `Provide a 5-day weather forecast for ${tour.city}, ${tour.country}. Include temperature in Celsius, weather conditions (e.g., Sunny, Cloudy with showers), and wind speed in km/h. Format the output as clean Markdown in a table format with columns: Day, Condition, Temp (°C), Wind (km/h). Add a single-sentence friendly summary at the top.`;
 
     try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-        const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: prompt,
+        const response = await fetch('/api/gemini/generate-text', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt }),
         });
-        setWeather(response.text || '');
+        if (!response.ok) {
+            throw new Error('Server error');
+        }
+        const data = await response.json();
+        setWeather(data.text || '');
     } catch (err) {
         console.error(err);
         setWeatherError('Could not fetch weather data. Please try again.');
@@ -295,12 +359,16 @@ const TourDetailPage: React.FC = () => {
     const prompt = `Generate 3 to 5 interesting and little-known fun facts about ${tour.city}, ${tour.country}. Format the output as a clean Markdown bulleted list.`;
 
     try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-        const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: prompt,
+        const response = await fetch('/api/gemini/generate-text', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt }),
         });
-        setFunFacts(response.text || '');
+        if (!response.ok) {
+            throw new Error('Server error');
+        }
+        const data = await response.json();
+        setFunFacts(data.text || '');
     } catch (err) {
         console.error(err);
         setFunFactsError('Could not fetch fun facts. Please try again.');
@@ -318,12 +386,16 @@ const TourDetailPage: React.FC = () => {
     const prompt = `Based on a trip to ${tour.city}, ${tour.country} for ${tour.durationHours > 24 ? Math.ceil(tour.durationHours / 24) : 1} day(s), what should I pack? The tour is described as: "${tour.description}". Format the output as a clean Markdown list, categorized.`;
 
     try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-        const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: prompt,
+        const response = await fetch('/api/gemini/generate-text', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt }),
         });
-        setPackingList(response.text || '');
+        if (!response.ok) {
+            throw new Error('Server error');
+        }
+        const data = await response.json();
+        setPackingList(data.text || '');
     } catch (err) {
         console.error(err);
         setPackingListError('Could not generate a packing list. Please try again.');
@@ -332,25 +404,109 @@ const TourDetailPage: React.FC = () => {
     }
   };
 
-  const handleBookNow = () => {
+  const handleBookNow = async () => {
     if (!tour) return;
-    
-    const id = 'VNS-' + Math.random().toString(36).substring(2, 9).toUpperCase();
-    const newBooking: Booking = {
-        id,
+    setBookingError(null);
+
+    if (!travelDate || !customerName.trim() || !customerEmail.trim()) {
+      setBookingError('Please fill in your travel date, full name, and email address to reserve.');
+      return;
+    }
+
+    setBookingBusy(true);
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      const bookRes = await fetch('/api/bookings', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          bookingType: 'experience',
+          itemSlug: tour.slug,
+          travelDate,
+          timeSlot,
+          guests: pax,
+          currency,
+          customerName: customerName.trim(),
+          customerEmail: customerEmail.trim(),
+          customerPhone: customerPhone.trim(),
+          specialRequests: specialRequests.trim(),
+        }),
+      });
+      const bookData = await bookRes.json();
+      if (!bookRes.ok || !bookData.booking) {
+        setBookingError(bookData.error || 'Unable to reserve this experience.');
+        return;
+      }
+
+      const savedBooking: TravelBookingRecord = bookData.booking;
+      const payRes = await fetch('/api/payments/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookingRef: savedBooking.bookingRef }),
+      });
+      const payData = await payRes.json();
+
+      const localBooking: Booking = {
+        id: savedBooking.bookingRef,
         tourId: tour.id,
         tourTitle: tour.title,
         tourSlug: tour.slug,
         tourImage: tour.images[0],
-        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        date: savedBooking.travelDate,
         status: 'upcoming',
-        price: tour.basePriceUSD * pax,
-        currency: 'USD'
-    };
-    
-    addBooking(newBooking);
-    setBookingId(id);
-    setIsBookingModalOpen(true);
+        price: savedBooking.totalUsd,
+        currency: 'USD',
+      };
+      addBooking(localBooking);
+
+      setReceiptBooking(savedBooking);
+      setReceiptTx(payData.transaction || null);
+      setCheckoutUrl(payData.checkoutUrl || null);
+      setCheckoutNote(payData.message || null);
+      setReceiptOpen(true);
+    } catch {
+      setBookingError('Network error while creating reservation. Please retry.');
+    } finally {
+      setBookingBusy(false);
+    }
+  };
+
+  const generateMissionBriefing = async () => {
+    if (!tour) return;
+
+    setIsVideoLoading(true);
+    setVideoStatus('Initializing cinematic synthesis...');
+    setVideoUrl('');
+
+    try {
+      setVideoStatus('Synthesizing visuals...');
+      const prompt = `A cinematic, high-quality travel video showcasing the beautiful scenery and activities of ${tour.city}, ${tour.country}. ${tour.description}`;
+      const response = await fetch('/api/gemini/generate-video', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt }),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'Video synthesis request failed');
+      }
+
+      const data = await response.json();
+      if (data.videoUrl) {
+        setVideoUrl(data.videoUrl);
+      } else {
+        throw new Error('No video URL returned');
+      }
+    } catch (err) {
+      console.error(err);
+      setVideoStatus('Synthesis failed. Please try again.');
+    } finally {
+      setIsVideoLoading(false);
+      setVideoStatus('');
+    }
   };
 
 
@@ -370,15 +526,36 @@ const TourDetailPage: React.FC = () => {
             <AnimateOnScroll>
               <div className="space-y-4">
                 <div 
-                  className="h-72 md:h-[500px] rounded-xl bg-cover bg-center shadow-lg transition-all duration-300" 
-                  style={{ backgroundImage: `url(${selectedImage})` }}
+                  className="h-72 md:h-[500px] rounded-xl shadow-lg transition-all duration-300 relative overflow-hidden group bg-gray-900" 
                   role="img"
                   aria-label={`Image of ${tour.title}`}
-                ></div>
+                >
+                  <img 
+                    src={selectedImage} 
+                    alt={`Image of ${tour.title}`} 
+                    className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500"
+                    referrerPolicy="no-referrer"
+                  />
+                  {videoUrl && (
+                    <video 
+                      src={videoUrl} 
+                      autoPlay 
+                      loop 
+                      controls 
+                      className="absolute inset-0 w-full h-full object-cover z-10"
+                    />
+                  )}
+                  {isVideoLoading && (
+                    <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center z-20 backdrop-blur-sm">
+                      <div className="w-16 h-16 border-4 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin mb-4"></div>
+                      <p className="text-white font-cinzel text-lg animate-pulse">{videoStatus}</p>
+                    </div>
+                  )}
+                </div>
                 <div className="grid grid-cols-4 gap-4">
                   {tour.images.map((img, index) => (
-                    <button key={index} onClick={() => setSelectedImage(img)} className={`rounded-md overflow-hidden border-2 transition-all ${selectedImage === img ? 'border-[var(--accent-primary)] scale-105' : 'border-transparent hover:border-[var(--accent-primary)]/50'}`}>
-                        <img src={img} alt={`${tour.title} thumbnail ${index+1}`} className="w-full h-24 object-cover" />
+                    <button key={index} onClick={() => { setSelectedImage(img); setVideoUrl(''); }} className={`rounded-md overflow-hidden border-2 transition-all ${selectedImage === img && !videoUrl ? 'border-[var(--accent-primary)] scale-105' : 'border-transparent hover:border-[var(--accent-primary)]/50'}`}>
+                        <img src={img} alt={`${tour.title} thumbnail ${index+1}`} className="w-full h-24 object-cover" referrerPolicy="no-referrer" />
                     </button>
                   ))}
                 </div>
@@ -388,7 +565,34 @@ const TourDetailPage: React.FC = () => {
 
           <div className="lg:col-span-2">
             <AnimateOnScroll delay="200ms">
-              <h1 className="text-3xl md:text-4xl font-bold font-cinzel">{tour.title}</h1>
+              <div className="flex items-start justify-between gap-3">
+                <h1 className="text-3xl md:text-4xl font-bold font-cinzel">{tour.title}</h1>
+                <button
+                  type="button"
+                  onClick={() => toggleFavorite(tour.slug, 'experience')}
+                  aria-label={isFavorite(tour.slug) ? 'Remove from favorites' : 'Save experience to favorites'}
+                  className={`p-2.5 rounded-xl border transition-colors shrink-0 ${
+                    isFavorite(tour.slug)
+                      ? 'bg-rose-600/30 border-rose-400 text-rose-200'
+                      : 'bg-white/5 border-white/15 text-gray-300 hover:text-white'
+                  }`}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    viewBox="0 0 24 24"
+                    fill={isFavorite(tour.slug) ? 'currentColor' : 'none'}
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                    />
+                  </svg>
+                </button>
+              </div>
               <div className="text-md mt-2" style={{ color: 'var(--text-secondary)'}}>
                 <span>{tour.durationHours > 0 ? `${tour.durationHours} hours` : 'Flexible'}</span> &bull; 
                 <span> {tour.city}, {tour.country}</span>
@@ -398,34 +602,132 @@ const TourDetailPage: React.FC = () => {
               <AnimateOnScroll>
                 <PricingOffer price={currentPrice} currency={currency} />
               </AnimateOnScroll>
+
+              <div className="mt-6 p-4 rounded-xl border border-purple-500/25 bg-purple-950/20 text-xs space-y-1">
+                <p className="font-bold uppercase tracking-wider text-purple-300">Meeting Hub</p>
+                <p className="text-gray-200">
+                  Central Pickup / Designated Meeting Hub — {tour.city}, {tour.country}
+                </p>
+              </div>
               
-              <div className="mt-8">
-                  <div className="flex items-center gap-4">
-                      <label htmlFor="pax-count" className="font-semibold">Guests:</label>
+              <div className="mt-6 space-y-3 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label htmlFor="tour-travel-date" className="block font-semibold mb-1 text-gray-300">
+                        Preferred Date *
+                      </label>
+                      <input
+                        id="tour-travel-date"
+                        type="date"
+                        required
+                        value={travelDate}
+                        onChange={(e) => setTravelDate(e.target.value)}
+                        className="w-full border rounded-lg px-3 py-2 focus:outline-none"
+                        style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="pax-count" className="block font-semibold mb-1 text-gray-300">
+                        Guests *
+                      </label>
                       <input 
                           type="number" 
                           id="pax-count"
                           name="count" 
                           min="1" 
+                          max="30"
                           value={pax}
                           onChange={(e) => setPax(Math.max(1, parseInt(e.target.value) || 1))}
-                          className="border rounded-md px-3 py-2 w-24 text-center focus:ring-2 focus:outline-none"
-                          style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)', '--ring-color': 'var(--accent-primary)' } as React.CSSProperties}
+                          className="w-full border rounded-lg px-3 py-2 focus:outline-none"
+                          style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
                       />
+                    </div>
                   </div>
+
+                  <div>
+                    <label htmlFor="tour-time-slot" className="block font-semibold mb-1 text-gray-300">
+                      Departure Time Slot
+                    </label>
+                    <select
+                      id="tour-time-slot"
+                      value={timeSlot}
+                      onChange={(e) => setTimeSlot(e.target.value)}
+                      className="w-full border rounded-lg px-3 py-2 focus:outline-none"
+                      style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                    >
+                      {TIME_SLOT_OPTIONS.map((slot) => (
+                        <option key={slot} value={slot}>{slot}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <input
+                      type="text"
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      placeholder="Lead Traveler Name *"
+                      className="w-full border rounded-lg px-3 py-2 focus:outline-none"
+                      style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                    />
+                    <input
+                      type="email"
+                      value={customerEmail}
+                      onChange={(e) => setCustomerEmail(e.target.value)}
+                      placeholder="Confirmation Email *"
+                      className="w-full border rounded-lg px-3 py-2 focus:outline-none"
+                      style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <input
+                      type="tel"
+                      value={customerPhone}
+                      onChange={(e) => setCustomerPhone(e.target.value)}
+                      placeholder="WhatsApp / Mobile (Optional)"
+                      className="w-full border rounded-lg px-3 py-2 focus:outline-none"
+                      style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                    />
+                    <input
+                      type="text"
+                      value={specialRequests}
+                      onChange={(e) => setSpecialRequests(e.target.value)}
+                      placeholder="Hotel pickup or dietary note"
+                      className="w-full border rounded-lg px-3 py-2 focus:outline-none"
+                      style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                    />
+                  </div>
+
+                  {bookingError && (
+                    <div className="p-3 rounded-lg bg-rose-950/70 border border-rose-500/40 text-rose-200">
+                      {bookingError}
+                    </div>
+                  )}
               </div>
 
               <div className="mt-6 space-y-4">
                   <button 
                     onClick={handleBookNow}
-                    className="w-full px-6 py-4 text-white font-black uppercase tracking-widest rounded-lg shadow-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--bg-primary)]"
+                    disabled={bookingBusy}
+                    className="w-full px-6 py-4 text-white font-black uppercase tracking-widest rounded-lg shadow-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--bg-primary)] disabled:opacity-60"
                     style={{ 
                       backgroundColor: 'var(--accent-primary)',
                       boxShadow: `0 4px 14px 0 var(--shadow-color-primary)`,
                       '--ring-color': 'var(--accent-primary)'
                     } as React.CSSProperties}>
-                      Book Adventure Now
+                      {bookingBusy ? 'Creating Reservation...' : 'Book Adventure Now'}
                   </button>
+                  <a
+                    href={buildWhatsAppDirectEnquiryUrl(
+                      `Hello Vanhsya Global Travels, I would like to book / enquire about "${tour.title}" (${tour.city}, ${tour.country}) on ${travelDate} (${timeSlot}) for ${pax} guest(s) in ${currency}.`
+                    )}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full px-6 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold uppercase tracking-wider text-xs rounded-lg shadow-lg flex items-center justify-center gap-2 transition-colors"
+                  >
+                    Book / Enquire on WhatsApp ({BRAND_CONTACTS.whatsappDisplay})
+                  </a>
                   {tour.vrPreviewUrl && (
                       <button
                           onClick={() => setIsVrModalOpen(true)}
@@ -435,7 +737,14 @@ const TourDetailPage: React.FC = () => {
                           Launch VR Preview
                       </button>
                   )}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                      <button 
+                          onClick={generateMissionBriefing} 
+                          disabled={isVideoLoading || !!videoUrl}
+                          className="px-4 py-3 bg-pink-600/20 border border-pink-500/30 text-pink-300 font-bold rounded-lg hover:bg-pink-600 hover:text-white transition-all disabled:opacity-50 flex items-center justify-center text-xs uppercase"
+                      >
+                          {isVideoLoading ? '...' : 'Video'}
+                      </button>
                       <button 
                           onClick={handleFetchWeather} 
                           disabled={isWeatherLoading}
@@ -602,54 +911,15 @@ const TourDetailPage: React.FC = () => {
           </div>
       )}
 
-      {/* --- Booking Confirmation Modal --- */}
-      {isBookingModalOpen && (
-          <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4 animate-fadeIn" onClick={() => setIsBookingModalOpen(false)}>
-              <div className="relative w-full max-w-lg bg-[var(--bg-secondary)] border border-[var(--accent-primary)] rounded-2xl shadow-2xl overflow-hidden p-8 text-center" onClick={e => e.stopPropagation()}>
-                  <div className="mb-6 w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto border-2 border-green-500 shadow-[0_0_20px_rgba(34,197,94,0.4)]">
-                      <svg className="w-10 h-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                      </svg>
-                  </div>
-                  <h2 className="text-3xl font-black font-cinzel text-white mb-2 uppercase tracking-widest">Adventure Locked!</h2>
-                  <p className="text-gray-400 mb-8">Your ticket to {tour.city} has been issued.</p>
-                  
-                  <div className="bg-black/40 border border-white/5 rounded-xl p-6 text-left mb-10 space-y-4">
-                      <div className="flex justify-between border-b border-white/5 pb-2">
-                          <span className="text-xs text-gray-500 uppercase font-bold tracking-tighter">Tour</span>
-                          <span className="text-sm font-bold text-white">{tour.title}</span>
-                      </div>
-                      <div className="flex justify-between border-b border-white/5 pb-2">
-                          <span className="text-xs text-gray-500 uppercase font-bold tracking-tighter">Booking ID</span>
-                          <span className="text-sm font-mono font-bold text-[var(--accent-primary)]">{bookingId}</span>
-                      </div>
-                      <div className="flex justify-between border-b border-white/5 pb-2">
-                          <span className="text-xs text-gray-500 uppercase font-bold tracking-tighter">Guests</span>
-                          <span className="text-sm font-bold text-white">{pax} Traveler(s)</span>
-                      </div>
-                      <div className="flex justify-between">
-                          <span className="text-xs text-gray-500 uppercase font-bold tracking-tighter">Total Paid</span>
-                          <span className="text-lg font-black text-[var(--accent-secondary)]">{currency} {(totalAmount * (CURRENCY_RATES_FROM_USD[currency] || 1)).toLocaleString()}</span>
-                      </div>
-                  </div>
-
-                  <div className="flex flex-col gap-3">
-                      <button 
-                        onClick={() => navigate('/dashboard')}
-                        className="w-full py-4 bg-white text-black font-black uppercase tracking-widest rounded-xl hover:bg-gray-200 transition-colors shadow-lg shadow-white/10"
-                      >
-                          View In My Passport
-                      </button>
-                      <button 
-                        onClick={() => setIsBookingModalOpen(false)}
-                        className="w-full py-3 bg-transparent text-gray-400 font-bold hover:text-white transition-colors"
-                      >
-                          Close
-                      </button>
-                  </div>
-              </div>
-          </div>
-      )}
+      {/* --- Official Booking & Payment Receipt Modal --- */}
+      <ReceiptModal
+        isOpen={receiptOpen}
+        booking={receiptBooking}
+        payment={receiptTx}
+        checkoutUrl={checkoutUrl}
+        checkoutNote={checkoutNote}
+        onClose={() => setReceiptOpen(false)}
+      />
     </div>
   );
 };

@@ -1,7 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { GoogleGenAI, Modality, Chat } from "@google/genai";
 import { Tour } from '../types';
-import { decode, decodeAudioData } from '../utils/media';
 
 // --- UI COMPONENTS ---
 
@@ -27,96 +25,91 @@ interface VRAssistantProps {
 }
 
 const VRAssistant: React.FC<VRAssistantProps> = ({ onClose, tour }) => {
-    const [ai, setAi] = useState<GoogleGenAI | null>(null);
-    const [chat, setChat] = useState<Chat | null>(null);
     const [prompt, setPrompt] = useState('');
     const [chatHistory, setChatHistory] = useState<{ role: 'user' | 'model'; text: string; sources?: any[] }[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     
     const [useSearch, setUseSearch] = useState(true);
-    const [useMaps, setUseMaps] = useState(true);
+    const [useMaps, setUseMaps] = useState(false);
 
     const chatContainerRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        try {
-            const genAI = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-            setAi(genAI);
-        } catch (e) {
-            setError("Failed to initialize AI. Ensure API Key is configured.");
-            console.error(e);
+    const startNewChat = useCallback(() => {
+        let initialMessage = "Welcome to the VR Experience! How can I help you explore today? Feel free to ask about our virtual destinations or the technology behind them.";
+        if (tour) {
+            initialMessage = `Welcome! I see you're looking at the ${tour.title} experience. What would you like to know about this virtual adventure in ${tour.city}?`;
         }
-    }, []);
-    
+        setChatHistory([{ role: 'model', text: initialMessage }]);
+    }, [tour]);
+
+    useEffect(() => {
+        startNewChat();
+    }, [startNewChat]);
+
     useEffect(() => {
         if (chatContainerRef.current) {
             chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
         }
     }, [chatHistory]);
 
-    const startNewChat = useCallback(() => {
-        if (!ai) return;
-        const model = 'gemini-2.5-flash';
-        let tools: any[] = [];
-        if (useSearch) tools.push({ googleSearch: {} });
-        if (useMaps) tools.push({ googleMaps: {} });
-
-        const systemInstruction = `You are a friendly and enthusiastic travel assistant for Vanhsya's VR Experience page. Your goal is to answer user questions about the virtual tours, destinations, and the VR technology itself. Be engaging and encourage users to explore the virtual experiences. If the user mentions a specific tour, tailor your responses to that tour if possible. Format your responses using Markdown for readability.`;
-        
-        const config: any = { systemInstruction };
-        if (tools.length > 0) config.tools = tools;
-
-        setChat(ai.chats.create({ model, config }));
-
-        let initialMessage = "Welcome to the VR Experience! How can I help you explore today? Feel free to ask about our virtual destinations or the technology behind them.";
-        if (tour) {
-            initialMessage = `Welcome! I see you're looking at the ${tour.title} experience. What would you like to know about this virtual adventure in ${tour.city}?`;
-        }
-        setChatHistory([{ role: 'model', text: initialMessage }]);
-    }, [ai, useSearch, useMaps, tour]);
-
-    useEffect(() => {
-        startNewChat();
-    }, [startNewChat]);
-
     const handleSendMessage = useCallback(async () => {
-        if (!prompt.trim() || !chat) return;
+        if (!prompt.trim()) return;
         
         setIsLoading(true);
         setError(null);
         
         const userMessage = prompt;
+        const currentHistory = chatHistory;
         setChatHistory(prev => [...prev, { role: 'user', text: userMessage }]);
         setPrompt('');
 
+        const systemInstruction = `You are a friendly and enthusiastic travel assistant for Vanhsya's VR Experience page. Your goal is to answer user questions about the virtual tours, destinations, and the VR technology itself. Be engaging and encourage users to explore the virtual experiences. If the user mentions a specific tour, tailor your responses to that tour if possible. Format your responses using Markdown for readability.${tour ? ` Current tour context: ${tour.title} in ${tour.city}, ${tour.country}. Description: ${tour.description}` : ''}`;
+
         try {
-            const response = await chat.sendMessage({ message: userMessage });
-            const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
-            setChatHistory(prev => [...prev, { role: 'model', text: response.text, sources }]);
+            const response = await fetch('/api/gemini/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: userMessage,
+                    history: currentHistory,
+                    systemInstruction,
+                    useSearch,
+                    useMaps,
+                }),
+            });
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error || 'Failed to get response from AI assistant');
+            }
+
+            const data = await response.json();
+            setChatHistory(prev => [...prev, { role: 'model', text: data.text, sources: data.sources }]);
         } catch (e: any) {
             setError(e.message || "An unexpected error occurred.");
         } finally {
             setIsLoading(false);
         }
-    }, [chat, prompt]);
+    }, [chatHistory, prompt, tour, useSearch, useMaps]);
     
     const playTTS = async (text: string) => {
-        if (!ai) return;
         try {
-            const response = await ai.models.generateContent({
-                model: "gemini-2.5-flash-preview-tts",
-                contents: [{ parts: [{ text }] }],
-                config: { responseModalities: [Modality.AUDIO] },
+            const response = await fetch('/api/gemini/tts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text, voiceName: 'Kore' }),
             });
-            const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-            if (base64Audio) {
-                const outputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-                const audioBuffer = await decodeAudioData(decode(base64Audio), outputAudioContext, 24000, 1);
-                const source = outputAudioContext.createBufferSource();
-                source.buffer = audioBuffer;
-                source.connect(outputAudioContext.destination);
-                source.start();
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error || 'TTS audio request failed');
+            }
+
+            const data = await response.json();
+            if (data.audio) {
+                const audio = new Audio(`data:${data.mimeType || 'audio/wav'};base64,${data.audio}`);
+                await audio.play();
             }
         } catch (e: any) {
             setError("TTS failed: " + e.message);

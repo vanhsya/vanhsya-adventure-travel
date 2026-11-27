@@ -5,7 +5,53 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vanhsya - Transform Your Global Journey With AI</title>
+    <title>Vanhsya Social Club & Global Travels — Life Begins With a Hello</title>
+    <meta name="description" content="Vanhsya Social Club in the UAE: Life Begins With a Hello. Come alone. Explore together. Curated verified Stranger MeetUps for UAE residents 18+, alongside Vanhsya Global Travels AI Planner and VR Experience." />
+    <meta name="keywords" content="Vanhsya Social Club, Vanhsya Global Travels, Stranger MeetUps UAE, Dubai Social Club, Abu Dhabi Meetups, Life Begins With a Hello, Come alone Explore together, AI Travel Planner" />
+    <link rel="canonical" href="https://www.vanhsya.com/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Vanhsya Social Club · Vanhsya Global Travels" />
+    <meta property="og:title" content="Vanhsya Social Club — Life Begins With a Hello" />
+    <meta property="og:description" content="Come alone. Explore together. UAE's verified 18+ social community for curated Stranger MeetUps and bespoke travel experiences." />
+    <meta property="og:url" content="https://www.vanhsya.com/" />
+    <meta property="og:image" content="https://www.vanhsya.com/assets/aistudio/image_82725320.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Vanhsya Social Club — Life Begins With a Hello" />
+    <meta name="twitter:description" content="Come alone. Explore together. Join UAE's curated 18+ social community & Stranger MeetUps." />
+    <meta name="twitter:image" content="https://www.vanhsya.com/assets/aistudio/image_82725320.png" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Vanhsya Global Travels & Vanhsya Social Club",
+        "url": "https://www.vanhsya.com",
+        "email": "info@vanhsya.com",
+        "telephone": "+971506230702",
+        "contactPoint": [
+          {
+            "@type": "ContactPoint",
+            "contactType": "bookings and partnerships",
+            "email": "info@vanhsya.com",
+            "telephone": "+971506230702"
+          },
+          {
+            "@type": "ContactPoint",
+            "contactType": "customer support",
+            "email": "support@vanhsya.com",
+            "telephone": "+971506230702"
+          }
+        ],
+        "slogan": "Life Begins With a Hello — Come alone. Explore together.",
+        "sameAs": [
+          "https://www.instagram.com/vanhsyatravels?evlk=Zzlsd3JsdGE0NGww&utm_source=qr",
+          "https://wa.me/971506230702"
+        ],
+        "areaServed": {
+          "@type": "Country",
+          "name": "United Arab Emirates"
+        }
+      }
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/js-base64@3.7.2/base64.min.js"></script>
@@ -312,6 +358,66 @@
         animation: stagger-in 0.5s ease-out forwards;
       }
 
+      /* Vanhsya Travels X Concierge & Translator Animations */
+      @keyframes vanhsya-voice-bar {
+        0%, 100% { transform: scaleY(0.28); opacity: 0.55; }
+        50% { transform: scaleY(1); opacity: 1; }
+      }
+      @keyframes vanhsya-orbit-spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+      @keyframes vanhsya-orbit-reverse {
+        from { transform: rotate(360deg); }
+        to { transform: rotate(0deg); }
+      }
+      @keyframes vanhsya-aurora-pulse {
+        0%, 100% { opacity: 0.45; transform: scale(0.96); }
+        50% { opacity: 0.9; transform: scale(1.06); }
+      }
+      .animate-vanhsya-orbit {
+        animation: vanhsya-orbit-spin 14s linear infinite;
+      }
+      .animate-vanhsya-orbit-reverse {
+        animation: vanhsya-orbit-reverse 20s linear infinite;
+      }
+      .animate-vanhsya-aurora {
+        animation: vanhsya-aurora-pulse 3.2s ease-in-out infinite;
+      }
+      .animate-vanhsya-bar {
+        transform-origin: bottom;
+        animation: vanhsya-voice-bar 0.9s ease-in-out infinite;
+      }
+
+      /* Subtle Champagne-Gold Accent & 3D Interactive Depth */
+      :root {
+        --accent-gold: #D4AF37;
+        --accent-gold-soft: rgba(212, 175, 55, 0.16);
+      }
+
+      .card-3d-tilt {
+        transform-style: preserve-3d;
+        transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+      }
+      @media (hover: hover) {
+        .card-3d-tilt:hover {
+          transform: perspective(1000px) rotateX(1.5deg) rotateY(-1.5deg) translateY(-6px);
+          box-shadow: 0 24px 55px -12px rgba(138, 43, 226, 0.28), 0 0 0 1px rgba(212, 175, 55, 0.22);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+          scroll-behavior: auto !important;
+        }
+        .card-3d-tilt:hover {
+          transform: none !important;
+        }
+      }
+
     </style>
   <script type="importmap">
 {
@@ -320,11 +426,11 @@
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "react": "https://aistudiocdn.com/react@^19.2.0",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.28.0",
     "@/": "./"
   }
 }
 </script>
+<link rel="stylesheet" href="/index.css">
 </head>
   <body>
     <script>

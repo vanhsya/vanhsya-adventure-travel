@@ -185,7 +185,7 @@ const BlogsPage: React.FC = () => {
                     <span className="text-purple-500 font-bold uppercase tracking-widest text-xs">Join the Collective</span>
                     <h2 className="text-4xl md:text-5xl font-black font-cinzel text-white mt-4 mb-6">Become a Creator</h2>
                     <p className="max-w-2xl mx-auto text-gray-400 text-lg">
-                        Turn your travel experiences into valuable rewards. Write for Vanhsya and get paid in travel credits and YNO tokens.
+                        Turn your travel experiences into memorable dispatches. Write for Vanhsya and earn verified travel perks and community creator credits (subject to active compliance guidelines).
                     </p>
                 </div>
             </AnimateOnScroll>
